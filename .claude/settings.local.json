@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\Enzo\\\\OneDrive\\\\桌面\\\\smart-budget\" -Recurse -Force | Where-Object {!$_.PSIsContainer} | Select-Object FullName, Length | Format-Table -AutoSize)"
+    ]
+  }
+}
