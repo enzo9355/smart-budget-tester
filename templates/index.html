@@ -409,6 +409,11 @@ tr:last-child td{border-bottom:none}
       <textarea id="exp-text" placeholder='e.g. "Lunch at MOS Burger 180 yesterday, feeling stressed" or "Concert tickets 320 with friends, so excited!"'></textarea>
     </div>
 
+    <div class="fg">
+      <label>Date</label>
+      <input type="date" id="exp-date" style="width:auto">
+    </div>
+
     <div class="flex gap-2">
       <button class="btn btn-primary" id="parse-btn" onclick="doParseExpense()">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-10 7 10 7"/><path d="M20 5v14"/></svg>
@@ -648,6 +653,7 @@ let searchTimer = null;
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dash-month').value = CUR_MONTH;
   document.getElementById('ins-month').value  = CUR_MONTH;
+  document.getElementById('exp-date').value   = new Date().toISOString().slice(0,10);
   checkAIStatus();
   loadDashboard();
 });
@@ -851,7 +857,7 @@ async function doParseExpense() {
 function showPreview(d) {
   document.getElementById('p-amount').value   = d.amount || '';
   document.getElementById('p-category').value = d.category || 'Other';
-  document.getElementById('p-date').value     = d.date || new Date().toISOString().slice(0,10);
+  document.getElementById('p-date').value     = d.date || document.getElementById('exp-date').value || new Date().toISOString().slice(0,10);
   document.getElementById('p-desc').value     = d.description || '';
   document.getElementById('p-emotion').value  = d.emotion || 'neutral';
   const ctx = d.context_tag && d.context_tag !== 'none' ? d.context_tag : '';
@@ -894,7 +900,8 @@ async function saveExpense() {
 
 function cancelPreview() { document.getElementById('preview-box').style.display = 'none'; }
 function clearAdd() {
-  document.getElementById('exp-text').value = '';
+  document.getElementById('exp-text').value  = '';
+  document.getElementById('exp-date').value  = new Date().toISOString().slice(0,10);
   document.getElementById('preview-box').style.display = 'none';
 }
 
