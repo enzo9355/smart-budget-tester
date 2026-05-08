@@ -1,6 +1,9 @@
 import os
 import csv
 import io
+import time
+import threading
+import urllib.request
 from datetime import datetime, date, timedelta
 from collections import defaultdict
 
@@ -414,6 +417,23 @@ def seed():
 
 with app.app_context():
     db.create_all()
+
+
+# ── Self-ping (keeps Render free tier alive) ──────────────────────────────────
+
+_PING_URL = "https://smart-budget-tester.onrender.com/api/status"
+_PING_INTERVAL = 14 * 60  # 14 minutes
+
+def _ping_loop():
+    while True:
+        time.sleep(_PING_INTERVAL)
+        try:
+            urllib.request.urlopen(_PING_URL, timeout=10)
+        except Exception:
+            pass
+
+threading.Thread(target=_ping_loop, daemon=True).start()
+
 
 if __name__ == "__main__":
     app.run(debug=True)
