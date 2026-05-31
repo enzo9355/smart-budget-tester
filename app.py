@@ -1,3 +1,7 @@
+"""
+Smart Budget — Gamified Eco-Finance Cultivation App
+Flask backend with carbon footprint tracking, ESG scoring, and gamification.
+"""
 import os
 import csv
 import io
@@ -19,10 +23,87 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
-CATEGORIES = [
-    "Food & Dining", "Transport", "Entertainment", "Shopping",
-    "Health", "Education", "Utilities", "Other"
-]
+
+# ── Carbon Categories & Emission Factors ─────────────────────────────────────
+# Based on GHG Protocol Scope 3 spend-based methodology
+# Factors: kg CO2e per TWD spent
+# Derived from EU consumption emission factor data, converted at 1 EUR ~ 35 TWD
+
+CARBON_CATEGORIES = {
+    "Car & Fuel":           {"factor": 0.120, "icon": "\U0001f697", "group": "Transport"},
+    "Public Transport":     {"factor": 0.012, "icon": "\U0001f68c", "group": "Transport"},
+    "Taxi & Rideshare":     {"factor": 0.060, "icon": "\U0001f695", "group": "Transport"},
+    "Flight":               {"factor": 0.280, "icon": "✈️", "group": "Transport"},
+    "Meat & Dairy":         {"factor": 0.090, "icon": "\U0001f969", "group": "Food"},
+    "Groceries":            {"factor": 0.010, "icon": "\U0001f966", "group": "Food"},
+    "Restaurant":           {"factor": 0.055, "icon": "\U0001f37d️", "group": "Food"},
+    "Cafe & Drinks":        {"factor": 0.040, "icon": "☕",     "group": "Food"},
+    "Seafood":              {"factor": 0.070, "icon": "\U0001f41f", "group": "Food"},
+    "Fashion":              {"factor": 0.080, "icon": "\U0001f457", "group": "Shopping"},
+    "Electronics":          {"factor": 0.100, "icon": "\U0001f4f1", "group": "Shopping"},
+    "Books & Stationery":   {"factor": 0.008, "icon": "\U0001f4da", "group": "Shopping"},
+    "Beauty & Personal":    {"factor": 0.045, "icon": "\U0001f484", "group": "Shopping"},
+    "Furniture & Home":     {"factor": 0.060, "icon": "\U0001f3e0", "group": "Shopping"},
+    "Electricity":          {"factor": 0.095, "icon": "⚡",     "group": "Utilities"},
+    "Water":                {"factor": 0.005, "icon": "\U0001f4a7", "group": "Utilities"},
+    "Gas":                  {"factor": 0.110, "icon": "\U0001f525", "group": "Utilities"},
+    "Rent & Housing":       {"factor": 0.020, "icon": "\U0001f3d8️", "group": "Housing"},
+    "Streaming & Software": {"factor": 0.015, "icon": "\U0001f4fa", "group": "Digital"},
+    "Education":            {"factor": 0.008, "icon": "\U0001f393", "group": "Education"},
+    "Healthcare":           {"factor": 0.025, "icon": "\U0001f3e5", "group": "Health"},
+    "Entertainment":        {"factor": 0.030, "icon": "\U0001f3ac", "group": "Entertainment"},
+    "Insurance":            {"factor": 0.010, "icon": "\U0001f6e1️", "group": "Finance"},
+    "Other":                {"factor": 0.040, "icon": "\U0001f4e6", "group": "Other"},
+}
+
+CATEGORIES = list(CARBON_CATEGORIES.keys())
+
+# Backward compatibility for old category names
+LEGACY_CATEGORY_MAP = {
+    "Food & Dining": "Restaurant",
+    "Transport":     "Public Transport",
+    "Shopping":      "Fashion",
+    "Health":        "Healthcare",
+    "Utilities":     "Electricity",
+}
+
+
+def calculate_carbon(amount, category):
+    """Calculate carbon footprint (kg CO2e) for a transaction amount in TWD."""
+    mapped = LEGACY_CATEGORY_MAP.get(category, category)
+    if mapped == "Electricity":
+        kwh = amount / 3.5    # Taiwan avg electricity price: 3.5 TWD/kWh
+        return round(kwh * 0.495, 3)  # Taiwan EPA grid emission factor
+    info = CARBON_CATEGORIES.get(mapped, CARBON_CATEGORIES["Other"])
+    return round(amount * info["factor"], 3)
+
+
+def get_earth_state(monthly_carbon):
+    """Determine Earth companion visual state from monthly carbon (kg CO2e)."""
+    if monthly_carbon < 300:
+        return {"state": "thriving", "label": "Thriving", "color": "#4ade80",
+                "message": "Your planet is thriving! Keep it up!"}
+    elif monthly_carbon < 600:
+        return {"state": "neutral", "label": "Neutral", "color": "#fbbf24",
+                "message": "Your planet is doing okay. Small changes help!"}
+    elif monthly_carbon < 900:
+        return {"state": "stressed", "label": "Stressed", "color": "#fb923c",
+                "message": "Your planet needs a break. Try greener choices!"}
+    else:
+        return {"state": "critical", "label": "Critical", "color": "#94a3b8",
+                "message": "Your planet is struggling. Every eco-choice matters!"}
+
+
+def get_eco_rank(score):
+    """Get gamification rank based on eco score."""
+    if score >= 300:
+        return {"rank": "Earth Protector", "emoji": "\U0001f30d", "next_at": None}
+    elif score >= 150:
+        return {"rank": "Guardian", "emoji": "\U0001f333", "next_at": 300}
+    elif score >= 50:
+        return {"rank": "Sprout", "emoji": "\U0001f33f", "next_at": 150}
+    else:
+        return {"rank": "Seedling", "emoji": "\U0001f331", "next_at": 50}
 
 
 # ── Models ──────────────────────────────────────────────────────────────────
@@ -36,6 +117,7 @@ class Expense(db.Model):
     emotion     = db.Column(db.String(20), default="neutral")
     emotion_note= db.Column(db.Text)
     context_tag = db.Column(db.String(50))
+    carbon_kg   = db.Column(db.Float, default=0.0)
     date        = db.Column(db.Date, nullable=False)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -48,6 +130,7 @@ class Expense(db.Model):
             "emotion":      self.emotion,
             "emotion_note": self.emotion_note,
             "context_tag":  self.context_tag,
+            "carbon_kg":    self.carbon_kg or 0.0,
             "date":         self.date.isoformat(),
             "created_at":   self.created_at.isoformat(),
         }
@@ -100,6 +183,12 @@ def status():
     return jsonify({"ai_enabled": bool(os.environ.get("GEMINI_API_KEY"))})
 
 
+@app.route("/api/categories")
+def get_categories():
+    """Return all categories with their carbon info for the frontend."""
+    return jsonify(CARBON_CATEGORIES)
+
+
 # ── Expenses ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/expenses", methods=["POST"])
@@ -111,13 +200,23 @@ def create_expense():
             if data.get("date") else date.today()
         )
         ctx = data.get("context_tag")
+        amount = float(data["amount"])
+        category = data.get("category", "Other")
+
+        # Auto-calculate carbon or use manual override
+        if data.get("carbon_kg") is not None and data["carbon_kg"] != "":
+            carbon = float(data["carbon_kg"])
+        else:
+            carbon = calculate_carbon(amount, category)
+
         expense = Expense(
-            amount       = float(data["amount"]),
-            category     = data.get("category", "Other"),
+            amount       = amount,
+            category     = category,
             description  = data.get("description", ""),
             emotion      = data.get("emotion", "neutral"),
             emotion_note = data.get("emotion_note", ""),
             context_tag  = ctx if ctx and ctx != "none" else None,
+            carbon_kg    = carbon,
             date         = expense_date,
         )
         db.session.add(expense)
@@ -172,17 +271,126 @@ def search_expenses():
     return jsonify([ex.to_dict() for ex in query.order_by(Expense.date.desc()).all()])
 
 
-# ── NLP Parse (preview only — does NOT save) ─────────────────────────────────
+# ── NLP Parse (preview only) ────────────────────────────────────────────────
 
 @app.route("/api/parse", methods=["POST"])
 def parse_route():
     from nlp_service import parse_expense
     text   = (request.json or {}).get("text", "")
     result = parse_expense(text, date.today().isoformat())
+    # Map legacy categories to new carbon-aware categories
+    if result.get("category"):
+        result["category"] = LEGACY_CATEGORY_MAP.get(result["category"], result["category"])
+    # Attach carbon estimate
+    if result.get("amount") and result.get("category"):
+        result["carbon_kg"] = calculate_carbon(float(result["amount"]), result["category"])
     return jsonify(result)
 
 
-# ── Budgets ───────────────────────────────────────────────────────────────────
+# ── Carbon Endpoints ─────────────────────────────────────────────────────────
+
+@app.route("/api/carbon/estimate")
+def carbon_estimate():
+    """Live carbon estimate for a given amount and category."""
+    amount   = float(request.args.get("amount", 0))
+    category = request.args.get("category", "Other")
+    return jsonify({"carbon_kg": calculate_carbon(amount, category)})
+
+
+@app.route("/api/carbon/summary")
+def carbon_summary():
+    """Return carbon totals grouped by category and time period."""
+    month = request.args.get("month", date.today().strftime("%Y-%m"))
+    s, e  = month_range(month)
+    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+
+    today_iso  = date.today().isoformat()
+    week_start = (date.today() - timedelta(days=date.today().weekday())).isoformat()
+
+    by_category  = defaultdict(float)
+    by_day       = defaultdict(float)
+    total_today  = 0.0
+    total_week   = 0.0
+    total_month  = 0.0
+
+    for ex in expenses:
+        c = ex.carbon_kg or 0.0
+        by_category[ex.category] += c
+        by_day[ex.date.isoformat()] += c
+        total_month += c
+        if ex.date.isoformat() == today_iso:
+            total_today += c
+        if ex.date.isoformat() >= week_start:
+            total_week += c
+
+    # Carbon equivalences
+    driving_km   = round(total_month / 0.21, 1) if total_month > 0 else 0
+    trees_needed = round(total_month / (21 / 12), 1) if total_month > 0 else 0
+
+    return jsonify({
+        "by_category":  dict(by_category),
+        "by_day":       dict(by_day),
+        "total_today":  round(total_today, 2),
+        "total_week":   round(total_week, 2),
+        "total_month":  round(total_month, 2),
+        "equivalences": {
+            "driving_km":   driving_km,
+            "trees_needed": trees_needed,
+        },
+    })
+
+
+@app.route("/api/carbon/eco-score")
+def eco_score():
+    """Return eco score, streak, rank, and earth state for gamification."""
+    month = request.args.get("month", date.today().strftime("%Y-%m"))
+    s, e  = month_range(month)
+    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+
+    # Eco score: low-carbon txs earn points, high-carbon txs cost points
+    score = 0
+    monthly_carbon = 0.0
+    for ex in expenses:
+        c = ex.carbon_kg or 0.0
+        monthly_carbon += c
+        if c < 0.05:
+            score += 5
+        elif c > 2.0:
+            score -= 10
+    score = max(score, 0)
+
+    # Streak: consecutive days with at least one transaction (1-day grace)
+    streak = 0
+    check_date = date.today()
+    if not Expense.query.filter(Expense.date == check_date).first():
+        check_date -= timedelta(days=1)
+    while True:
+        has_tx = Expense.query.filter(Expense.date == check_date).first()
+        if has_tx:
+            streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    earth = get_earth_state(monthly_carbon)
+    rank  = get_eco_rank(score)
+
+    return jsonify({
+        "eco_score":      score,
+        "rank":           rank["rank"],
+        "rank_emoji":     rank["emoji"],
+        "next_rank_at":   rank["next_at"],
+        "streak":         streak,
+        "monthly_carbon": round(monthly_carbon, 2),
+        "taiwan_avg":     750,
+        "earth_state":    earth["state"],
+        "earth_label":    earth["label"],
+        "earth_color":    earth["color"],
+        "earth_message":  earth["message"],
+    })
+
+
+# ── Budgets ──────────────────────────────────────────────────────────────────
 
 @app.route("/api/budgets", methods=["POST"])
 def set_budget():
@@ -222,7 +430,7 @@ def get_budgets():
     return jsonify(result)
 
 
-# ── Monthly Summary (NLP narrative) ──────────────────────────────────────────
+# ── Monthly Summary (NLP narrative) ─────────────────────────────────────────
 
 @app.route("/api/summary/<month>")
 def get_summary(month):
@@ -241,19 +449,21 @@ def get_summary(month):
 
     by_category = defaultdict(float)
     by_emotion  = defaultdict(list)
+    total_carbon = sum(ex.carbon_kg or 0 for ex in expenses)
     for ex in expenses:
         by_category[ex.category] += ex.amount
         by_emotion[ex.emotion or "neutral"].append(ex.amount)
 
     stats = {
-        "total":       sum(ex.amount for ex in expenses),
-        "count":       len(expenses),
-        "by_category": dict(by_category),
-        "by_emotion":  {
+        "total":        sum(ex.amount for ex in expenses),
+        "count":        len(expenses),
+        "by_category":  dict(by_category),
+        "by_emotion":   {
             k: {"total": sum(v), "avg": sum(v) / len(v), "count": len(v)}
             for k, v in by_emotion.items()
         },
-        "top_category": max(by_category, key=by_category.get) if by_category else "Other",
+        "top_category":  max(by_category, key=by_category.get) if by_category else "Other",
+        "total_carbon":  round(total_carbon, 2),
     }
 
     from nlp_service import generate_monthly_summary
@@ -265,7 +475,7 @@ def get_summary(month):
     return jsonify(row.to_dict())
 
 
-# ── Stats ─────────────────────────────────────────────────────────────────────
+# ── Stats ────────────────────────────────────────────────────────────────────
 
 @app.route("/api/stats/monthly")
 def monthly_stats():
@@ -276,10 +486,9 @@ def monthly_stats():
     by_category = defaultdict(float)
     by_day      = defaultdict(float)
     for ex in expenses:
-        by_category[ex.category]       += ex.amount
-        by_day[ex.date.isoformat()]    += ex.amount
+        by_category[ex.category]    += ex.amount
+        by_day[ex.date.isoformat()] += ex.amount
 
-    # Fill every day in the month
     daily = {}
     cur = s
     while cur < e:
@@ -319,7 +528,7 @@ def emotion_stats():
     return jsonify(result)
 
 
-# ── Anomaly Detection ─────────────────────────────────────────────────────────
+# ── Anomaly Detection ───────────────────────────────────────────────────────
 
 @app.route("/api/anomalies")
 def anomalies():
@@ -334,17 +543,17 @@ def anomalies():
         for ex in exps:
             by_cat[ex.category] += ex.amount
         return {
-            "total":      sum(ex.amount for ex in exps),
+            "total":       sum(ex.amount for ex in exps),
             "by_category": dict(by_cat),
-            "max_single": max((ex.amount for ex in exps), default=0),
-            "categories": list({ex.category for ex in exps}),
+            "max_single":  max((ex.amount for ex in exps), default=0),
+            "categories":  list({ex.category for ex in exps}),
         }
 
     from nlp_service import detect_anomalies_nlp
     return jsonify(detect_anomalies_nlp(month_data(cur_m), month_data(prv_m)))
 
 
-# ── CSV Export ────────────────────────────────────────────────────────────────
+# ── CSV Export ───────────────────────────────────────────────────────────────
 
 @app.route("/api/export/csv")
 def export_csv():
@@ -357,17 +566,18 @@ def export_csv():
 
     buf = io.StringIO()
     w   = csv.writer(buf)
-    w.writerow(["Date", "Description", "Category", "Amount", "Emotion", "Context Tag", "Emotion Note"])
+    w.writerow(["Date", "Description", "Category", "Amount", "Carbon_kg_CO2e",
+                "Emotion", "Context Tag"])
     for ex in exps:
         w.writerow([ex.date, ex.description, ex.category, ex.amount,
-                    ex.emotion, ex.context_tag or "", ex.emotion_note or ""])
+                    ex.carbon_kg or 0.0, ex.emotion, ex.context_tag or ""])
     buf.seek(0)
     fname = f"smart-budget-{month or 'all'}.csv"
     return Response(buf.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename={fname}"})
 
 
-# ── Seed Data ─────────────────────────────────────────────────────────────────
+# ── Seed Data ────────────────────────────────────────────────────────────────
 
 @app.route("/api/seed")
 def seed():
@@ -377,34 +587,42 @@ def seed():
     db.session.commit()
 
     rows = [
-        ("2026-05-01", 180,  "Food & Dining",  "Lunch at MOS Burger",                      "negative", "feeling stressed before exam",        "study-related"),
-        ("2026-05-02",  45,  "Transport",       "Bus pass top-up",                           "neutral",  "",                                    None),
-        ("2026-05-03", 320,  "Entertainment",   "Concert tickets with friends",              "positive", "so excited for tonight!",             "social"),
-        ("2026-05-04",  95,  "Food & Dining",   "Weekly grocery shopping",                   "neutral",  "",                                    None),
-        ("2026-05-05", 580,  "Shopping",        "New running shoes on sale",                 "positive", "great deal, 40% off!",                None),
-        ("2026-05-06", 220,  "Education",       "Textbook for statistics course",            "negative", "expensive but necessary",             "study-related"),
-        ("2026-05-07",  60,  "Food & Dining",   "Coffee and snacks during study session",    "neutral",  "",                                    "study-related"),
-        ("2026-05-08", 150,  "Health",          "Grabbed food on way to hospital checkup",   "negative", "anxious about appointment",           "health-related"),
-        ("2026-05-09",  85,  "Utilities",       "Mobile phone bill",                         "neutral",  "",                                    None),
-        ("2026-05-10", 200,  "Food & Dining",   "Team dinner after project presentation",    "positive", "celebrating our success!",            "work-related"),
-        ("2026-05-12",1200,  "Shopping",        "Impulse bought gaming controller",          "negative", "retail therapy gone wrong",           None),
-        ("2026-05-14",  75,  "Transport",       "Taxi home late night after studying",       "negative", "exhausted from finals prep",          "study-related"),
-        ("2026-05-16", 350,  "Entertainment",   "Streaming subscriptions and snacks",        "positive", "needed a break from studying",        "social"),
-        ("2026-05-18", 480,  "Health",          "Gym membership monthly fee",                "positive", "investing in my health",              "health-related"),
-        ("2026-05-20", 130,  "Food & Dining",   "Stress eating bubble tea and snacks",       "negative", "finals week anxiety hitting hard",    "study-related"),
+        ("2026-05-01", 180,  "Restaurant",         "Lunch at MOS Burger",                     "negative", "feeling stressed before exam",       "study-related"),
+        ("2026-05-02",  45,  "Public Transport",    "Bus pass top-up",                          "neutral",  "",                                   None),
+        ("2026-05-03", 320,  "Entertainment",       "Concert tickets with friends",             "positive", "so excited for tonight!",            "social"),
+        ("2026-05-04",  95,  "Groceries",           "Weekly vegetable shopping",                "neutral",  "",                                   None),
+        ("2026-05-05", 580,  "Fashion",             "New running shoes on sale",                "positive", "great deal, 40% off!",               None),
+        ("2026-05-06", 220,  "Education",           "Textbook for statistics course",           "negative", "expensive but necessary",            "study-related"),
+        ("2026-05-07",  60,  "Cafe & Drinks",       "Coffee and snacks during study session",   "neutral",  "",                                   "study-related"),
+        ("2026-05-08", 150,  "Healthcare",          "Hospital checkup copay",                   "negative", "anxious about appointment",          "health-related"),
+        ("2026-05-09",  85,  "Electricity",         "Monthly electricity bill",                 "neutral",  "",                                   None),
+        ("2026-05-10", 200,  "Restaurant",          "Team dinner after project presentation",   "positive", "celebrating our success!",           "work-related"),
+        ("2026-05-12",1200,  "Electronics",         "Impulse bought gaming controller",         "negative", "retail therapy gone wrong",          None),
+        ("2026-05-14",  75,  "Taxi & Rideshare",    "Taxi home late night after studying",      "negative", "exhausted from finals prep",         "study-related"),
+        ("2026-05-16", 350,  "Streaming & Software","Streaming subscriptions and snacks",       "positive", "needed a break from studying",       "social"),
+        ("2026-05-18", 480,  "Healthcare",          "Gym membership monthly fee",               "positive", "investing in my health",             "health-related"),
+        ("2026-05-20", 130,  "Cafe & Drinks",       "Stress eating bubble tea and snacks",      "negative", "finals week anxiety hitting hard",   "study-related"),
+        ("2026-05-22",2800,  "Flight",              "Round trip to Taipei for interview",       "positive", "nervous but excited",                "work-related"),
+        ("2026-05-24", 650,  "Meat & Dairy",        "BBQ supplies for graduation party",        "positive", "celebrating with friends",           "social"),
+        ("2026-05-26", 120,  "Public Transport",    "MRT monthly pass renewal",                 "neutral",  "",                                   None),
+        ("2026-05-28",  35,  "Groceries",           "Fruit and vegetables from market",         "positive", "trying to eat healthier",            "health-related"),
+        ("2026-05-30", 890,  "Car & Fuel",          "Gas for road trip to Kenting",             "positive", "weekend adventure with friends!",    "social"),
     ]
 
     for d, amt, cat, desc, em, en, ctx in rows:
+        carbon = calculate_carbon(amt, cat)
         db.session.add(Expense(
             amount=amt, category=cat, description=desc,
             emotion=em, emotion_note=en, context_tag=ctx,
+            carbon_kg=carbon,
             date=datetime.strptime(d, "%Y-%m-%d").date(),
         ))
 
     budgets = [
-        ("Food & Dining", 500), ("Transport", 200), ("Entertainment", 400),
-        ("Shopping", 800),      ("Health", 600),     ("Education", 500),
-        ("Utilities", 200),
+        ("Restaurant", 800),      ("Public Transport", 200),
+        ("Entertainment", 400),   ("Fashion", 600),
+        ("Healthcare", 600),      ("Education", 500),
+        ("Electricity", 300),     ("Groceries", 500),
     ]
     for cat, lim in budgets:
         db.session.add(Budget(category=cat, monthly_limit=lim))
@@ -413,16 +631,39 @@ def seed():
     return jsonify({"message": "Seed data loaded", "expenses": len(rows)})
 
 
-# ── Init ──────────────────────────────────────────────────────────────────────
+# ── Init & Migration ────────────────────────────────────────────────────────
 
 with app.app_context():
     db.create_all()
+    # Add carbon_kg column to existing databases
+    try:
+        db.session.execute(db.text("SELECT carbon_kg FROM expenses LIMIT 1"))
+    except Exception:
+        try:
+            db.session.execute(db.text(
+                "ALTER TABLE expenses ADD COLUMN carbon_kg FLOAT DEFAULT 0.0"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    # Backfill carbon_kg for any existing records missing it
+    try:
+        nulls = Expense.query.filter(
+            db.or_(Expense.carbon_kg == None, Expense.carbon_kg == 0.0)
+        ).all()
+        if nulls:
+            for ex in nulls:
+                ex.carbon_kg = calculate_carbon(ex.amount, ex.category)
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 
-# ── Self-ping (keeps Render free tier alive) ──────────────────────────────────
+# ── Self-ping (keeps Render free tier alive) ─────────────────────────────────
 
 _PING_URL = "https://smart-budget-tester.onrender.com/api/status"
-_PING_INTERVAL = 14 * 60  # 14 minutes
+_PING_INTERVAL = 14 * 60
 
 def _ping_loop():
     while True:
