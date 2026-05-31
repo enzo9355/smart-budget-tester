@@ -138,10 +138,26 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 
       <!-- Stats Bars -->
       <div class="flex flex-col gap-5 flex-1 w-full">
-        <!-- Financial Health -->
+        <!-- Monthly Income Setting -->
+        <div class="flex items-center justify-between">
+          <span class="font-label-lg text-[14px] text-on-surface-variant">💵 Monthly Income</span>
+          <div class="flex items-center gap-2">
+            <span class="font-headline-md text-[20px] text-primary" id="income-display">$0</span>
+            <button onclick="toggleIncomeEdit()" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-variant transition-colors" title="Edit income">
+              <span class="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
+            </button>
+          </div>
+        </div>
+        <!-- Income Edit (hidden by default) -->
+        <div id="income-editor" class="hidden flex items-center gap-2 -mt-2">
+          <input type="number" id="income-input" placeholder="Monthly income" min="0" step="100" class="flex-1 bg-surface-container-lowest border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
+          <button onclick="saveIncome()" class="bg-primary text-on-primary font-bold px-4 py-2 rounded-xl text-sm hover:scale-[1.02] active:scale-95 transition-all">Save</button>
+          <button onclick="toggleIncomeEdit()" class="text-on-surface-variant hover:text-on-surface px-2 py-2 rounded-xl text-sm transition-colors">Cancel</button>
+        </div>
+        <!-- Income bar (Spent vs Income) -->
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-end mb-1">
-            <span class="font-label-lg text-[14px] text-on-surface-variant">💰 Financial Health</span>
+            <span class="font-label-lg text-[14px] text-on-surface-variant">💰 Spent</span>
             <span class="font-body-md text-[14px] text-on-surface" id="fin-label">$0 / $0</span>
           </div>
           <div class="h-4 w-full bg-surface-container rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] relative">
@@ -159,18 +175,22 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
           </div>
         </div>
         <!-- Quick Stats -->
-        <div class="grid grid-cols-3 gap-3 mt-2">
+        <div class="grid grid-cols-4 gap-3 mt-2">
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
-            <div class="font-headline-md text-[20px] text-primary" id="s-total">$0</div>
-            <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">SPENT</div>
+            <div class="font-headline-md text-[18px] text-tertiary" id="s-remaining">$0</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">REMAINING</div>
           </div>
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
-            <div class="font-headline-md text-[20px] text-eco" id="s-carbon">0 kg</div>
-            <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">CO₂e</div>
+            <div class="font-headline-md text-[18px] text-primary" id="s-total">$0</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">SPENT</div>
           </div>
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
-            <div class="font-headline-md text-[20px] text-on-surface" id="s-count">0</div>
-            <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">TXNS</div>
+            <div class="font-headline-md text-[18px] text-eco" id="s-carbon">0 kg</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">CO₂e</div>
+          </div>
+          <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
+            <div class="font-headline-md text-[18px] text-on-surface" id="s-count">0</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">TXNS</div>
           </div>
         </div>
       </div>
@@ -471,8 +491,14 @@ function goScreen(name){
 async function loadDashboard(){
   const month=document.getElementById('dash-month').value||CUR_MONTH;
   try{
-    const[stats,eco,carbon]=await Promise.all([api(`/api/stats/monthly?month=${month}`),api(`/api/carbon/eco-score?month=${month}`),api(`/api/carbon/summary?month=${month}`)]);
+    const[stats,eco,carbon,incomeData]=await Promise.all([api(`/api/stats/monthly?month=${month}`),api(`/api/carbon/eco-score?month=${month}`),api(`/api/carbon/summary?month=${month}`),api('/api/settings/income')]);
+    const income=incomeData.monthly_income||0;
+    const remaining=Math.max(0,income-stats.total);
+    document.getElementById('income-display').textContent='$'+fmt(income);
+    document.getElementById('income-input').value=income||'';
     document.getElementById('s-total').textContent='$'+fmt(stats.total);
+    document.getElementById('s-remaining').textContent='$'+fmt(remaining);
+    document.getElementById('s-remaining').style.color=remaining>0?'#dceac5':'#ffb4ab';
     document.getElementById('s-carbon').textContent=carbon.total_month.toFixed(1)+' kg';
     document.getElementById('s-count').textContent=stats.count;
     document.getElementById('streak-num').textContent=eco.streak;
@@ -483,14 +509,14 @@ async function loadDashboard(){
     document.getElementById('rank-sub').textContent=eco.next_rank_at?`${eco.next_rank_at-eco.eco_score} pts to next rank`:'Max rank achieved!';
     // Carbon stat color
     const cc=eco.monthly_carbon<300?'text-eco':eco.monthly_carbon<600?'text-[#fbbf24]':eco.monthly_carbon<900?'text-carbon':'text-error';
-    document.getElementById('s-carbon').className='font-headline-md text-[20px] '+cc;
-    // Financial bar
+    document.getElementById('s-carbon').className='font-headline-md text-[18px] '+cc;
+    // Financial bar — use income as denominator, fallback to budget total
     const budgets=await api(`/api/budgets?month=${month}`);
-    const totalBudget=budgets.reduce((s,b)=>s+b.monthly_limit,0)||1;
-    const finPct=Math.min(100,stats.total/totalBudget*100);
+    const finTotal=income>0?income:(budgets.reduce((s,b)=>s+b.monthly_limit,0)||1);
+    const finPct=Math.min(100,stats.total/finTotal*100);
     document.getElementById('fin-fill').style.width=finPct+'%';
     document.getElementById('fin-fill').style.background=finPct<70?'#c0ceab':finPct<90?'#e8d284':'#ffb4ab';
-    document.getElementById('fin-label').textContent=`$${fmt(stats.total)} / $${fmt(totalBudget)}`;
+    document.getElementById('fin-label').textContent=`$${fmt(stats.total)} / $${fmt(finTotal)}`;
     // Eco bar
     const ecoPct=Math.min(100,eco.monthly_carbon/eco.taiwan_avg*100);
     document.getElementById('eco-fill').style.width=ecoPct+'%';
@@ -710,6 +736,23 @@ async function saveTransaction(){
 }
 function resetAddForm(){document.getElementById('nlp-text').value='';document.getElementById('add-amount').value='';document.getElementById('add-note').value='';document.getElementById('add-date').value=TODAY;selectedCat='Restaurant';selectedEmotion='neutral';buildCatGrid();document.querySelectorAll('.mood-chip').forEach(b=>{const n=b.dataset.em==='neutral';b.className='mood-chip px-4 py-2 rounded-full text-sm font-semibold border transition-colors '+(n?'active border-primary bg-primary/10 text-primary':'border-surface-variant text-on-surface-variant')});updateCarbonEst()}
 function showEcoPop(msg,color){const el=document.createElement('div');el.className='eco-pop';el.style.color=color;el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),1000)}
+// ── Income Setting ──────────────────────────────────────────────────────────
+function toggleIncomeEdit(){
+  const ed=document.getElementById('income-editor');
+  ed.classList.toggle('hidden');
+  if(!ed.classList.contains('hidden'))document.getElementById('income-input').focus();
+}
+async function saveIncome(){
+  const val=parseFloat(document.getElementById('income-input').value);
+  if(!val||val<0){toast('Enter a valid amount','warn');return}
+  try{
+    await api('/api/settings/income',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({monthly_income:val})});
+    toast('Income updated!','success');
+    toggleIncomeEdit();
+    loadDashboard();
+  }catch(_){toast('Save failed','error')}
+}
+
 async function loadSeed(){if(!confirm('Load 20 demo transactions for May 2026?'))return;try{const r=await api('/api/seed');toast(`Demo loaded — ${r.expenses} transactions`,'success');loadDashboard()}catch(_){toast('Seed failed','error')}}
 function fmt(n){return Number(n).toFixed(0)}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}

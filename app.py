@@ -161,6 +161,13 @@ class MonthlySummary(db.Model):
         }
 
 
+class Setting(db.Model):
+    __tablename__ = "settings"
+    id    = db.Column(db.Integer, primary_key=True)
+    key   = db.Column(db.String(50), unique=True, nullable=False)
+    value = db.Column(db.String(200), nullable=False)
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def month_range(month_str):
@@ -187,6 +194,28 @@ def status():
 def get_categories():
     """Return all categories with their carbon info for the frontend."""
     return jsonify(CARBON_CATEGORIES)
+
+
+# ── Monthly Income Setting ───────────────────────────────────────────────────
+
+@app.route("/api/settings/income", methods=["GET"])
+def get_income():
+    s = Setting.query.filter_by(key="monthly_income").first()
+    return jsonify({"monthly_income": float(s.value) if s else 0})
+
+
+@app.route("/api/settings/income", methods=["POST"])
+def set_income():
+    data = request.json or {}
+    amount = float(data.get("monthly_income", 0))
+    s = Setting.query.filter_by(key="monthly_income").first()
+    if s:
+        s.value = str(amount)
+    else:
+        s = Setting(key="monthly_income", value=str(amount))
+        db.session.add(s)
+    db.session.commit()
+    return jsonify({"monthly_income": float(s.value)})
 
 
 # ── Expenses ─────────────────────────────────────────────────────────────────
@@ -584,6 +613,7 @@ def seed():
     Expense.query.delete()
     Budget.query.delete()
     MonthlySummary.query.delete()
+    Setting.query.delete()
     db.session.commit()
 
     rows = [
@@ -626,6 +656,9 @@ def seed():
     ]
     for cat, lim in budgets:
         db.session.add(Budget(category=cat, monthly_limit=lim))
+
+    # Default monthly income
+    db.session.add(Setting(key="monthly_income", value="12000"))
 
     db.session.commit()
     return jsonify({"message": "Seed data loaded", "expenses": len(rows)})
