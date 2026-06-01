@@ -1378,7 +1378,7 @@ async function runAiAnalysis() {
 
 // ── Seed / Demo ───────────────────────────────────────────────────────────────
 async function loadSeed() {
-  if (!confirm('Load 20 demo transactions for May 2026?')) return;
+  if (!confirm('Load 20 demo transactions for June 2026?')) return;
   try {
     const r = await api('/api/seed');
     toast(`Demo loaded — ${r.expenses} transactions`, 'success');
