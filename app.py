@@ -1,10 +1,12 @@
 """
 Smart Budget — Gamified Eco-Finance Cultivation App
 Flask backend with carbon footprint tracking, ESG scoring, and gamification.
+nlp_service replaced by inline Claude API (anthropic SDK).
 """
 import os
 import csv
 import io
+import json
 import time
 import threading
 import urllib.request
@@ -23,42 +25,52 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+# ── Anthropic Claude client (optional) ──────────────────────────────────────
+_anthropic_client = None
+
+def get_anthropic():
+    global _anthropic_client
+    if _anthropic_client is None:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if api_key:
+            try:
+                import anthropic
+                _anthropic_client = anthropic.Anthropic(api_key=api_key)
+            except ImportError:
+                pass
+    return _anthropic_client
+
 
 # ── Carbon Categories & Emission Factors ─────────────────────────────────────
-# Based on GHG Protocol Scope 3 spend-based methodology
-# Factors: kg CO2e per TWD spent
-# Derived from EU consumption emission factor data, converted at 1 EUR ~ 35 TWD
-
 CARBON_CATEGORIES = {
-    "Car & Fuel":           {"factor": 0.120, "icon": "\U0001f697", "group": "Transport"},
-    "Public Transport":     {"factor": 0.012, "icon": "\U0001f68c", "group": "Transport"},
-    "Taxi & Rideshare":     {"factor": 0.060, "icon": "\U0001f695", "group": "Transport"},
+    "Car & Fuel":           {"factor": 0.120, "icon": "🚗", "group": "Transport"},
+    "Public Transport":     {"factor": 0.012, "icon": "🚌", "group": "Transport"},
+    "Taxi & Rideshare":     {"factor": 0.060, "icon": "🚕", "group": "Transport"},
     "Flight":               {"factor": 0.280, "icon": "✈️", "group": "Transport"},
-    "Meat & Dairy":         {"factor": 0.090, "icon": "\U0001f969", "group": "Food"},
-    "Groceries":            {"factor": 0.010, "icon": "\U0001f966", "group": "Food"},
-    "Restaurant":           {"factor": 0.055, "icon": "\U0001f37d️", "group": "Food"},
-    "Cafe & Drinks":        {"factor": 0.040, "icon": "☕",     "group": "Food"},
-    "Seafood":              {"factor": 0.070, "icon": "\U0001f41f", "group": "Food"},
-    "Fashion":              {"factor": 0.080, "icon": "\U0001f457", "group": "Shopping"},
-    "Electronics":          {"factor": 0.100, "icon": "\U0001f4f1", "group": "Shopping"},
-    "Books & Stationery":   {"factor": 0.008, "icon": "\U0001f4da", "group": "Shopping"},
-    "Beauty & Personal":    {"factor": 0.045, "icon": "\U0001f484", "group": "Shopping"},
-    "Furniture & Home":     {"factor": 0.060, "icon": "\U0001f3e0", "group": "Shopping"},
-    "Electricity":          {"factor": 0.095, "icon": "⚡",     "group": "Utilities"},
-    "Water":                {"factor": 0.005, "icon": "\U0001f4a7", "group": "Utilities"},
-    "Gas":                  {"factor": 0.110, "icon": "\U0001f525", "group": "Utilities"},
-    "Rent & Housing":       {"factor": 0.020, "icon": "\U0001f3d8️", "group": "Housing"},
-    "Streaming & Software": {"factor": 0.015, "icon": "\U0001f4fa", "group": "Digital"},
-    "Education":            {"factor": 0.008, "icon": "\U0001f393", "group": "Education"},
-    "Healthcare":           {"factor": 0.025, "icon": "\U0001f3e5", "group": "Health"},
-    "Entertainment":        {"factor": 0.030, "icon": "\U0001f3ac", "group": "Entertainment"},
-    "Insurance":            {"factor": 0.010, "icon": "\U0001f6e1️", "group": "Finance"},
-    "Other":                {"factor": 0.040, "icon": "\U0001f4e6", "group": "Other"},
+    "Meat & Dairy":         {"factor": 0.090, "icon": "🥩", "group": "Food"},
+    "Groceries":            {"factor": 0.010, "icon": "🥦", "group": "Food"},
+    "Restaurant":           {"factor": 0.055, "icon": "🍽️", "group": "Food"},
+    "Cafe & Drinks":        {"factor": 0.040, "icon": "☕", "group": "Food"},
+    "Seafood":              {"factor": 0.070, "icon": "🐟", "group": "Food"},
+    "Fashion":              {"factor": 0.080, "icon": "👗", "group": "Shopping"},
+    "Electronics":          {"factor": 0.100, "icon": "📱", "group": "Shopping"},
+    "Books & Stationery":   {"factor": 0.008, "icon": "📚", "group": "Shopping"},
+    "Beauty & Personal":    {"factor": 0.045, "icon": "💄", "group": "Shopping"},
+    "Furniture & Home":     {"factor": 0.060, "icon": "🏠", "group": "Shopping"},
+    "Electricity":          {"factor": 0.095, "icon": "⚡", "group": "Utilities"},
+    "Water":                {"factor": 0.005, "icon": "💧", "group": "Utilities"},
+    "Gas":                  {"factor": 0.110, "icon": "🔥", "group": "Utilities"},
+    "Rent & Housing":       {"factor": 0.020, "icon": "🏘️", "group": "Housing"},
+    "Streaming & Software": {"factor": 0.015, "icon": "📺", "group": "Digital"},
+    "Education":            {"factor": 0.008, "icon": "🎓", "group": "Education"},
+    "Healthcare":           {"factor": 0.025, "icon": "🏥", "group": "Health"},
+    "Entertainment":        {"factor": 0.030, "icon": "🎬", "group": "Entertainment"},
+    "Insurance":            {"factor": 0.010, "icon": "🛡️", "group": "Finance"},
+    "Other":                {"factor": 0.040, "icon": "📦", "group": "Other"},
 }
 
 CATEGORIES = list(CARBON_CATEGORIES.keys())
 
-# Backward compatibility for old category names
 LEGACY_CATEGORY_MAP = {
     "Food & Dining": "Restaurant",
     "Transport":     "Public Transport",
@@ -69,17 +81,15 @@ LEGACY_CATEGORY_MAP = {
 
 
 def calculate_carbon(amount, category):
-    """Calculate carbon footprint (kg CO2e) for a transaction amount in TWD."""
     mapped = LEGACY_CATEGORY_MAP.get(category, category)
     if mapped == "Electricity":
-        kwh = amount / 3.5    # Taiwan avg electricity price: 3.5 TWD/kWh
-        return round(kwh * 0.495, 3)  # Taiwan EPA grid emission factor
+        kwh = amount / 3.5
+        return round(kwh * 0.495, 3)
     info = CARBON_CATEGORIES.get(mapped, CARBON_CATEGORIES["Other"])
     return round(amount * info["factor"], 3)
 
 
 def get_earth_state(monthly_carbon):
-    """Determine Earth companion visual state from monthly carbon (kg CO2e)."""
     if monthly_carbon < 300:
         return {"state": "thriving", "label": "Thriving", "color": "#4ade80",
                 "message": "Your planet is thriving! Keep it up!"}
@@ -95,31 +105,213 @@ def get_earth_state(monthly_carbon):
 
 
 def get_eco_rank(score):
-    """Get gamification rank based on eco score."""
     if score >= 300:
-        return {"rank": "Earth Protector", "emoji": "\U0001f30d", "next_at": None}
+        return {"rank": "Earth Protector", "emoji": "🌍", "next_at": None}
     elif score >= 150:
-        return {"rank": "Guardian", "emoji": "\U0001f333", "next_at": 300}
+        return {"rank": "Guardian", "emoji": "🌳", "next_at": 300}
     elif score >= 50:
-        return {"rank": "Sprout", "emoji": "\U0001f33f", "next_at": 150}
+        return {"rank": "Sprout", "emoji": "🌿", "next_at": 150}
     else:
-        return {"rank": "Seedling", "emoji": "\U0001f331", "next_at": 50}
+        return {"rank": "Seedling", "emoji": "🌱", "next_at": 50}
+
+
+# ── NLP helpers (Claude API) ─────────────────────────────────────────────────
+
+def parse_expense(text, today_str):
+    """Parse natural language expense description using Claude API."""
+    client = get_anthropic()
+    if not client:
+        return _rule_based_parse(text, today_str)
+
+    categories_list = ", ".join(CATEGORIES)
+    prompt = f"""Parse this expense description into structured data. Today is {today_str}.
+
+Description: "{text}"
+
+Return ONLY valid JSON (no markdown, no explanation) with these fields:
+- amount: number or null
+- category: one of [{categories_list}] or null
+- date: ISO date string YYYY-MM-DD or null
+- description: clean short description string
+- emotion: "positive", "negative", or "neutral"
+
+Example: {{"amount": 180, "category": "Restaurant", "date": "{today_str}", "description": "Lunch at MOS Burger", "emotion": "negative"}}"""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=256,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = msg.content[0].text.strip()
+        raw = raw.replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+    except Exception:
+        return _rule_based_parse(text, today_str)
+
+
+def _rule_based_parse(text, today_str):
+    """Fallback rule-based parser when Claude API is unavailable."""
+    import re
+    result = {"amount": None, "category": "Other", "date": today_str,
+              "description": text, "emotion": "neutral"}
+    # Extract amount
+    m = re.search(r'\b(\d+(?:\.\d+)?)\b', text)
+    if m:
+        result["amount"] = float(m.group(1))
+    # Keyword → category mapping
+    kw_map = {
+        "lunch|dinner|restaurant|burger|pizza|meal|eat|food|noodle": "Restaurant",
+        "coffee|cafe|tea|bubble|drink|boba": "Cafe & Drinks",
+        "bus|mrt|metro|train|transit|ubike": "Public Transport",
+        "taxi|uber|lyft|grab|rideshare": "Taxi & Rideshare",
+        "flight|air|plane|ticket": "Flight",
+        "beef|pork|chicken|meat|dairy|milk|cheese": "Meat & Dairy",
+        "grocery|supermarket|market|vegetable|fruit": "Groceries",
+        "cloth|shirt|shoe|fashion|outfit|dress": "Fashion",
+        "phone|laptop|computer|electronic|gadget": "Electronics",
+        "book|stationery|pen|notebook": "Books & Stationery",
+        "electric|electricity|power|bill": "Electricity",
+        "gym|hospital|clinic|medicine|health|doctor": "Healthcare",
+        "movie|cinema|concert|entertainment|game": "Entertainment",
+        "school|course|textbook|tuition|education": "Education",
+        "rent|housing|apartment": "Rent & Housing",
+        "netflix|spotify|streaming|subscription|software": "Streaming & Software",
+        "gas|petrol|fuel|car": "Car & Fuel",
+    }
+    t_lower = text.lower()
+    for pattern, cat in kw_map.items():
+        if re.search(pattern, t_lower):
+            result["category"] = cat
+            break
+    # Detect emotion
+    if re.search(r'stress|anxious|sad|bad|upset|angry|disappoint|regret|wrong', t_lower):
+        result["emotion"] = "negative"
+    elif re.search(r'happy|great|excit|celebrat|fun|love|amazing|wonderful|joy', t_lower):
+        result["emotion"] = "positive"
+    return result
+
+
+def generate_monthly_summary(month, stats):
+    """Generate AI monthly summary using Claude API."""
+    client = get_anthropic()
+    if not client:
+        return _rule_based_summary(month, stats)
+
+    prompt = f"""You are a friendly personal finance assistant with an eco-focus.
+Write a concise 3-4 sentence monthly spending summary for {month}.
+
+Data:
+- Total spent: TWD {stats['total']:.0f}
+- Transactions: {stats['count']}
+- Top category: {stats['top_category']}
+- Total carbon footprint: {stats['total_carbon']} kg CO₂e
+- Spending by category: {json.dumps(stats['by_category'], ensure_ascii=False)}
+- Emotion breakdown: {json.dumps({k: v['count'] for k, v in stats['by_emotion'].items()}, ensure_ascii=False)}
+
+Be encouraging, mention eco impact, and suggest one actionable improvement. Keep it warm and personal."""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return msg.content[0].text.strip()
+    except Exception:
+        return _rule_based_summary(month, stats)
+
+
+def _rule_based_summary(month, stats):
+    top = stats.get("top_category", "Other")
+    total = stats.get("total", 0)
+    carbon = stats.get("total_carbon", 0)
+    count = stats.get("count", 0)
+    eco_note = ("Great job keeping your carbon footprint low this month! 🌿"
+                if carbon < 300 else
+                "Consider swapping some high-carbon choices for greener alternatives. 🌱")
+    return (f"In {month}, you made {count} transactions totalling TWD {total:.0f}. "
+            f"Your biggest spending area was {top}. "
+            f"Your carbon footprint was {carbon:.1f} kg CO₂e. "
+            f"{eco_note}")
+
+
+def detect_anomalies_nlp(cur, prv):
+    """Detect spending anomalies using Claude API or rule-based fallback."""
+    client = get_anthropic()
+    if not client:
+        return _rule_based_anomalies(cur, prv)
+
+    prompt = f"""Analyze these monthly spending patterns and identify anomalies.
+
+Current month: {json.dumps(cur, ensure_ascii=False)}
+Previous month: {json.dumps(prv, ensure_ascii=False)}
+
+Return ONLY valid JSON (no markdown) with:
+{{
+  "anomalies": [
+    {{"category": "string", "message": "string", "severity": "low|medium|high"}}
+  ],
+  "summary": "one sentence overall assessment"
+}}
+
+Focus on: categories with >50% increase, unusually large single transactions, new categories."""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = msg.content[0].text.strip().replace("```json", "").replace("```", "").strip()
+        return json.loads(raw)
+    except Exception:
+        return _rule_based_anomalies(cur, prv)
+
+
+def _rule_based_anomalies(cur, prv):
+    anomalies = []
+    cur_cat = cur.get("by_category", {})
+    prv_cat = prv.get("by_category", {})
+    for cat, amount in cur_cat.items():
+        prev_amt = prv_cat.get(cat, 0)
+        if prev_amt > 0:
+            pct = (amount - prev_amt) / prev_amt * 100
+            if pct > 100:
+                anomalies.append({"category": cat,
+                                   "message": f"Spending up {pct:.0f}% vs last month (TWD {amount:.0f} vs {prev_amt:.0f})",
+                                   "severity": "high" if pct > 200 else "medium"})
+            elif pct > 50:
+                anomalies.append({"category": cat,
+                                   "message": f"Spending up {pct:.0f}% vs last month",
+                                   "severity": "low"})
+        elif amount > 500:
+            anomalies.append({"category": cat,
+                               "message": f"New category this month: TWD {amount:.0f}",
+                               "severity": "low"})
+    if cur.get("max_single", 0) > 2000:
+        anomalies.append({"category": "Single Transaction",
+                           "message": f"Large single transaction: TWD {cur['max_single']:.0f}",
+                           "severity": "medium"})
+    summary = (f"Found {len(anomalies)} anomaly(ies) this month."
+               if anomalies else "Spending patterns look normal this month.")
+    return {"anomalies": anomalies, "summary": summary}
 
 
 # ── Models ──────────────────────────────────────────────────────────────────
 
 class Expense(db.Model):
     __tablename__ = "expenses"
-    id          = db.Column(db.Integer, primary_key=True)
-    amount      = db.Column(db.Float,   nullable=False)
-    category    = db.Column(db.String(50), nullable=False, default="Other")
-    description = db.Column(db.Text)
-    emotion     = db.Column(db.String(20), default="neutral")
-    emotion_note= db.Column(db.Text)
-    context_tag = db.Column(db.String(50))
-    carbon_kg   = db.Column(db.Float, default=0.0)
-    date        = db.Column(db.Date, nullable=False)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+    id           = db.Column(db.Integer, primary_key=True)
+    amount       = db.Column(db.Float,   nullable=False)
+    category     = db.Column(db.String(50), nullable=False, default="Other")
+    description  = db.Column(db.Text)
+    emotion      = db.Column(db.String(20), default="neutral")
+    emotion_note = db.Column(db.Text)
+    context_tag  = db.Column(db.String(50))
+    carbon_kg    = db.Column(db.Float, default=0.0)
+    date         = db.Column(db.Date, nullable=False)
+    created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
@@ -171,7 +363,6 @@ class Setting(db.Model):
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def month_range(month_str):
-    """Return (start_date, end_date_exclusive) for a YYYY-MM string."""
     year, m = map(int, month_str.split("-"))
     start = date(year, m, 1)
     end   = date(year + 1, 1, 1) if m == 12 else date(year, m + 1, 1)
@@ -187,12 +378,14 @@ def index():
 
 @app.route("/api/status")
 def status():
-    return jsonify({"ai_enabled": bool(os.environ.get("GEMINI_API_KEY"))})
+    return jsonify({
+        "ai_enabled": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "ai_provider": "claude" if os.environ.get("ANTHROPIC_API_KEY") else None
+    })
 
 
 @app.route("/api/categories")
 def get_categories():
-    """Return all categories with their carbon info for the frontend."""
     return jsonify(CARBON_CATEGORIES)
 
 
@@ -206,7 +399,7 @@ def get_income():
 
 @app.route("/api/settings/income", methods=["POST"])
 def set_income():
-    data = request.json or {}
+    data   = request.json or {}
     amount = float(data.get("monthly_income", 0))
     s = Setting.query.filter_by(key="monthly_income").first()
     if s:
@@ -228,11 +421,10 @@ def create_expense():
             datetime.strptime(data["date"], "%Y-%m-%d").date()
             if data.get("date") else date.today()
         )
-        ctx = data.get("context_tag")
+        ctx    = data.get("context_tag")
         amount = float(data["amount"])
         category = data.get("category", "Other")
 
-        # Auto-calculate carbon or use manual override
         if data.get("carbon_kg") is not None and data["carbon_kg"] != "":
             carbon = float(data["carbon_kg"])
         else:
@@ -300,17 +492,14 @@ def search_expenses():
     return jsonify([ex.to_dict() for ex in query.order_by(Expense.date.desc()).all()])
 
 
-# ── NLP Parse (preview only) ────────────────────────────────────────────────
+# ── NLP Parse ────────────────────────────────────────────────────────────────
 
 @app.route("/api/parse", methods=["POST"])
 def parse_route():
-    from nlp_service import parse_expense
     text   = (request.json or {}).get("text", "")
     result = parse_expense(text, date.today().isoformat())
-    # Map legacy categories to new carbon-aware categories
     if result.get("category"):
         result["category"] = LEGACY_CATEGORY_MAP.get(result["category"], result["category"])
-    # Attach carbon estimate
     if result.get("amount") and result.get("category"):
         result["carbon_kg"] = calculate_carbon(float(result["amount"]), result["category"])
     return jsonify(result)
@@ -320,7 +509,6 @@ def parse_route():
 
 @app.route("/api/carbon/estimate")
 def carbon_estimate():
-    """Live carbon estimate for a given amount and category."""
     amount   = float(request.args.get("amount", 0))
     category = request.args.get("category", "Other")
     return jsonify({"carbon_kg": calculate_carbon(amount, category)})
@@ -328,7 +516,6 @@ def carbon_estimate():
 
 @app.route("/api/carbon/summary")
 def carbon_summary():
-    """Return carbon totals grouped by category and time period."""
     month = request.args.get("month", date.today().strftime("%Y-%m"))
     s, e  = month_range(month)
     expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
@@ -352,7 +539,6 @@ def carbon_summary():
         if ex.date.isoformat() >= week_start:
             total_week += c
 
-    # Carbon equivalences
     driving_km   = round(total_month / 0.21, 1) if total_month > 0 else 0
     trees_needed = round(total_month / (21 / 12), 1) if total_month > 0 else 0
 
@@ -371,13 +557,11 @@ def carbon_summary():
 
 @app.route("/api/carbon/eco-score")
 def eco_score():
-    """Return eco score, streak, rank, and earth state for gamification."""
     month = request.args.get("month", date.today().strftime("%Y-%m"))
     s, e  = month_range(month)
     expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
 
-    # Eco score: low-carbon txs earn points, high-carbon txs cost points
-    score = 0
+    score          = 0
     monthly_carbon = 0.0
     for ex in expenses:
         c = ex.carbon_kg or 0.0
@@ -388,8 +572,7 @@ def eco_score():
             score -= 10
     score = max(score, 0)
 
-    # Streak: consecutive days with at least one transaction (1-day grace)
-    streak = 0
+    streak     = 0
     check_date = date.today()
     if not Expense.query.filter(Expense.date == check_date).first():
         check_date -= timedelta(days=1)
@@ -431,19 +614,29 @@ def set_budget():
 
     budget = Budget.query.filter_by(category=category).first()
     if budget:
-        budget.monthly_limit = limit
+        budget.monthly_limit = float(limit)
     else:
-        budget = Budget(category=category, monthly_limit=limit)
+        budget = Budget(category=category, monthly_limit=float(limit))
         db.session.add(budget)
     db.session.commit()
     return jsonify(budget.to_dict())
 
 
+@app.route("/api/budgets/<int:bid>", methods=["DELETE"])
+def delete_budget(bid):
+    b = db.session.get(Budget, bid)
+    if not b:
+        return jsonify({"error": "Not found"}), 404
+    db.session.delete(b)
+    db.session.commit()
+    return jsonify({"message": "Deleted"})
+
+
 @app.route("/api/budgets")
 def get_budgets():
-    month   = request.args.get("month", date.today().strftime("%Y-%m"))
-    budgets = Budget.query.all()
-    s, e    = month_range(month)
+    month    = request.args.get("month", date.today().strftime("%Y-%m"))
+    budgets  = Budget.query.all()
+    s, e     = month_range(month)
     expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
 
     spent_by = defaultdict(float)
@@ -459,15 +652,15 @@ def get_budgets():
     return jsonify(result)
 
 
-# ── Monthly Summary (NLP narrative) ─────────────────────────────────────────
+# ── Monthly Summary ──────────────────────────────────────────────────────────
 
 @app.route("/api/summary/<month>")
 def get_summary(month):
-    force   = request.args.get("force", "false") == "true"
-    cached  = (MonthlySummary.query
-               .filter_by(year_month=month)
-               .order_by(MonthlySummary.generated_at.desc())
-               .first())
+    force  = request.args.get("force", "false") == "true"
+    cached = (MonthlySummary.query
+              .filter_by(year_month=month)
+              .order_by(MonthlySummary.generated_at.desc())
+              .first())
     if cached and not force:
         return jsonify(cached.to_dict())
 
@@ -476,8 +669,8 @@ def get_summary(month):
     if not expenses:
         return jsonify({"summary_text": "No expenses recorded for this month.", "year_month": month})
 
-    by_category = defaultdict(float)
-    by_emotion  = defaultdict(list)
+    by_category  = defaultdict(float)
+    by_emotion   = defaultdict(list)
     total_carbon = sum(ex.carbon_kg or 0 for ex in expenses)
     for ex in expenses:
         by_category[ex.category] += ex.amount
@@ -495,10 +688,8 @@ def get_summary(month):
         "total_carbon":  round(total_carbon, 2),
     }
 
-    from nlp_service import generate_monthly_summary
     text = generate_monthly_summary(month, stats)
-
-    row = MonthlySummary(year_month=month, summary_text=text)
+    row  = MonthlySummary(year_month=month, summary_text=text)
     db.session.add(row)
     db.session.commit()
     return jsonify(row.to_dict())
@@ -557,13 +748,139 @@ def emotion_stats():
     return jsonify(result)
 
 
-# ── Anomaly Detection ───────────────────────────────────────────────────────
+# ── AI Dashboard Analysis ────────────────────────────────────────────────────
+
+@app.route("/api/ai-analysis")
+def ai_analysis():
+    """Generate a rich AI spending analysis for the dashboard."""
+    month = request.args.get("month", date.today().strftime("%Y-%m"))
+    s, e  = month_range(month)
+    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+
+    if not expenses:
+        return jsonify({"error": "no_data",
+                        "message": "No expenses found for this period."})
+
+    # ── Build stats payload ───────────────────────────────────────────────
+    by_category  = defaultdict(float)
+    by_emotion   = defaultdict(list)
+    by_day       = defaultdict(float)
+    total_carbon = 0.0
+
+    for ex in expenses:
+        by_category[ex.category]    += ex.amount
+        by_emotion[ex.emotion or "neutral"].append(ex.amount)
+        by_day[ex.date.isoformat()]  += ex.amount
+        total_carbon                 += ex.carbon_kg or 0.0
+
+    total      = sum(ex.amount for ex in expenses)
+    top_cat    = max(by_category, key=by_category.get) if by_category else "Other"
+    top_amount = by_category[top_cat]
+    top_pct    = round(top_amount / total * 100, 1) if total else 0
+
+    cat_breakdown = {
+        cat: {"amount": round(amt, 0), "pct": round(amt / total * 100, 1)}
+        for cat, amt in sorted(by_category.items(), key=lambda x: -x[1])
+    }
+    emotion_totals = {
+        em: {"total": round(sum(v), 0), "count": len(v)}
+        for em, v in by_emotion.items()
+    }
+    active_days  = len([v for v in by_day.values() if v > 0])
+    avg_daily    = round(total / active_days, 0) if active_days else 0
+
+    income_setting = Setting.query.filter_by(key="monthly_income").first()
+    monthly_income = float(income_setting.value) if income_setting else 0
+
+    stats_payload = {
+        "month":          month,
+        "total":          round(total, 0),
+        "count":          len(expenses),
+        "monthly_income": monthly_income,
+        "savings":        round(monthly_income - total, 0) if monthly_income else None,
+        "savings_rate":   round((monthly_income - total) / monthly_income * 100, 1) if monthly_income else None,
+        "top_category":   top_cat,
+        "top_pct":        top_pct,
+        "avg_daily":      avg_daily,
+        "active_days":    active_days,
+        "total_carbon":   round(total_carbon, 2),
+        "by_category":    cat_breakdown,
+        "by_emotion":     emotion_totals,
+    }
+
+    # ── Claude API call ───────────────────────────────────────────────────
+    client = get_anthropic()
+    if not client:
+        lines = [
+            f"This month you spent TWD {total:,.0f} across {len(expenses)} transactions.",
+            f"Your biggest spending area was {top_cat}, making up {top_pct}% of your budget.",
+        ]
+        if monthly_income:
+            savings = monthly_income - total
+            lines.append(
+                f"You {'saved' if savings >= 0 else 'overspent by'} TWD {abs(savings):,.0f} this month."
+            )
+        lines.append(f"Your carbon footprint was {total_carbon:.1f} kg CO\u2082e.")
+        neg = emotion_totals.get("negative", {}).get("total", 0)
+        if neg > total * 0.25:
+            lines.append("A notable share of spending happened when you felt stressed — mindful pauses before purchases can help.")
+        return jsonify({"analysis": " ".join(lines), "stats": stats_payload, "ai_powered": False})
+
+    cat_lines = "\n".join(
+        f"  - {cat}: TWD {v['amount']:,.0f} ({v['pct']}%)"
+        for cat, v in list(cat_breakdown.items())[:8]
+    )
+    income_line = (
+        f"Monthly income: TWD {monthly_income:,.0f} | Remaining: TWD {stats_payload['savings']:,.0f} ({stats_payload['savings_rate']}% savings rate)"
+        if monthly_income else "Income not set."
+    )
+
+    prompt = f"""You are a warm, insightful personal finance coach with an eco-conscious perspective.
+Analyse this user's spending data for {month} and write a concise, personalised report in 4-5 sentences.
+
+KEY METRICS:
+- Total spent: TWD {total:,.0f} ({len(expenses)} transactions)
+- {income_line}
+- Top category: {top_cat} ({top_pct}% of total, TWD {top_amount:,.0f})
+- Avg daily spend: TWD {avg_daily:,.0f} over {active_days} active days
+- Carbon footprint: {total_carbon:.1f} kg CO2e
+
+CATEGORY BREAKDOWN (top 8):
+{cat_lines}
+
+EMOTION BREAKDOWN:
+{chr(10).join(f"  - {em}: TWD {v['total']:,.0f} ({v['count']} txns)" for em, v in emotion_totals.items())}
+
+INSTRUCTIONS:
+1. Open with a warm one-line summary of the month.
+2. Highlight the top spending category and whether it seems healthy or worth reviewing.
+3. If income data is available, comment on savings rate.
+4. Note the carbon footprint with one concrete eco tip.
+5. If significant spending was while feeling "negative"/"stressed", gently acknowledge it.
+6. Close with one actionable suggestion for next month.
+Keep it personal, encouraging, and under 120 words. Flowing prose only — no bullet points."""
+
+    try:
+        msg = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        analysis_text = msg.content[0].text.strip()
+    except Exception as ex_err:
+        analysis_text = f"Analysis unavailable ({ex_err})."
+
+    return jsonify({"analysis": analysis_text, "stats": stats_payload, "ai_powered": True})
+
+
+# ── Anomaly Detection ─────────────────────────────────────────────────────────
 
 @app.route("/api/anomalies")
 def anomalies():
     today = date.today()
     cur_m = today.strftime("%Y-%m")
-    prv_m = f"{today.year}-{today.month - 1:02d}" if today.month > 1 else f"{today.year - 1}-12"
+    prv_m = (f"{today.year}-{today.month - 1:02d}"
+             if today.month > 1 else f"{today.year - 1}-12")
 
     def month_data(m):
         ms, me = month_range(m)
@@ -578,7 +895,6 @@ def anomalies():
             "categories":  list({ex.category for ex in exps}),
         }
 
-    from nlp_service import detect_anomalies_nlp
     return jsonify(detect_anomalies_nlp(month_data(cur_m), month_data(prv_m)))
 
 
@@ -657,18 +973,15 @@ def seed():
     for cat, lim in budgets:
         db.session.add(Budget(category=cat, monthly_limit=lim))
 
-    # Default monthly income
     db.session.add(Setting(key="monthly_income", value="12000"))
-
     db.session.commit()
     return jsonify({"message": "Seed data loaded", "expenses": len(rows)})
 
 
-# ── Init & Migration ────────────────────────────────────────────────────────
+# ── Init & Migration ─────────────────────────────────────────────────────────
 
 with app.app_context():
     db.create_all()
-    # Add carbon_kg column to existing databases
     try:
         db.session.execute(db.text("SELECT carbon_kg FROM expenses LIMIT 1"))
     except Exception:
@@ -680,7 +993,6 @@ with app.app_context():
         except Exception:
             db.session.rollback()
 
-    # Backfill carbon_kg for any existing records missing it
     try:
         nulls = Expense.query.filter(
             db.or_(Expense.carbon_kg == None, Expense.carbon_kg == 0.0)
@@ -693,9 +1005,9 @@ with app.app_context():
         db.session.rollback()
 
 
-# ── Self-ping (keeps Render free tier alive) ─────────────────────────────────
+# ── Self-ping ─────────────────────────────────────────────────────────────────
 
-_PING_URL = "https://smart-budget-tester.onrender.com/api/status"
+_PING_URL      = "https://smart-budget-tester.onrender.com/api/status"
 _PING_INTERVAL = 14 * 60
 
 def _ping_loop():

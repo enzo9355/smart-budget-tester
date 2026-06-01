@@ -1,10 +1,23 @@
+# Environment
 .env
+*.env
+
+# Python
 __pycache__/
-*.pyc
-*.db
-*.db-shm
-*.db-wal
-venv/
+*.py[cod]
+*.pyo
 .venv/
-instance/
+venv/
+env/
+
+# Database (SQLite — use DATABASE_URL env var in production)
+*.db
+*.sqlite3
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
