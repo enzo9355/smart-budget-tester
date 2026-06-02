@@ -79,7 +79,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 #comp-modal.open{display:flex}
 #comp-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.72)}
 #comp-modal-panel{position:relative;margin:auto;width:100%;max-width:760px;max-height:92vh;background:#1a1c1e;border-radius:24px;overflow-y:auto;padding:1.5rem;border:1px solid #333537}
-@media(max-width:640px){#comp-modal-panel{margin:auto 0 0;border-radius:24px 24px 0 0;max-height:96vh}}
+@media(max-width:640px){ #comp-modal-panel{margin:auto 0 0;border-radius:24px 24px 0 0;max-height:96vh}}
 </style>
 </head>
 <body class="bg-background text-on-surface font-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary">
@@ -93,20 +93,20 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   </div>
   <nav class="flex flex-col gap-2 flex-1">
     <button class="sidebar-btn active flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition-all" id="side-home" onclick="goScreen('home')">
-      <span class="material-symbols-outlined icon-fill">home</span><span class="text-[16px]">Dashboard</span>
+      <span class="material-symbols-outlined icon-fill">home</span><span class="text-[16px]" data-i18n="nav_dashboard">Dashboard</span>
     </button>
     <button class="sidebar-btn flex items-center gap-4 text-outline px-4 py-3 rounded-xl hover:bg-surface-variant transition-colors" id="side-analytics" onclick="goScreen('analytics')">
-      <span class="material-symbols-outlined">trending_up</span><span class="text-[16px] font-medium text-on-surface-variant">Analytics</span>
+      <span class="material-symbols-outlined">trending_up</span><span class="text-[16px] font-medium text-on-surface-variant" data-i18n="nav_analytics">Analytics</span>
     </button>
     <button class="sidebar-btn flex items-center gap-4 text-outline px-4 py-3 rounded-xl hover:bg-surface-variant transition-colors" id="side-history" onclick="goScreen('history')">
-      <span class="material-symbols-outlined">receipt_long</span><span class="text-[16px] font-medium text-on-surface-variant">History</span>
+      <span class="material-symbols-outlined">receipt_long</span><span class="text-[16px] font-medium text-on-surface-variant" data-i18n="nav_history">History</span>
     </button>
     <button class="sidebar-btn flex items-center gap-4 text-outline px-4 py-3 rounded-xl hover:bg-surface-variant transition-colors" id="side-eco" onclick="goScreen('eco')">
-      <span class="material-symbols-outlined">eco</span><span class="text-[16px] font-medium text-on-surface-variant">Eco Profile</span>
+      <span class="material-symbols-outlined">eco</span><span class="text-[16px] font-medium text-on-surface-variant" data-i18n="nav_eco">Eco Profile</span>
     </button>
   </nav>
   <button onclick="openAddSheet()" class="mt-auto bg-primary text-on-primary font-bold py-4 px-4 rounded-xl flex items-center justify-center gap-3 shadow-[0_4px_20px_rgba(255,221,219,0.2)] hover:scale-[1.02] active:scale-95 transition-all duration-200">
-    <span class="material-symbols-outlined text-[24px]">add</span><span class="text-[16px]">Add Transaction</span>
+    <span class="material-symbols-outlined text-[24px]">add</span><span class="text-[16px]" data-i18n="nav_add_tx">Add Transaction</span>
   </button>
 </aside>
 
@@ -119,7 +119,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <div class="mobile-only w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-sm">🌿</div>
     <h2 class="font-headline-lg text-headline-lg-mobile xl:text-headline-lg text-on-surface" id="page-title">Overview</h2>
   </div>
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-2 flex-wrap">
     <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-sm font-bold" title="Streak">
       🔥 <span id="streak-num">0</span>
     </div>
@@ -127,6 +127,15 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <div class="w-2 h-2 rounded-full bg-surface-variant" id="ai-dot"></div>
       <span id="ai-label" class="text-on-surface-variant text-[12px]">AI</span>
     </div>
+    <button id="lang-btn" onclick="toggleLang()" class="px-3 py-1.5 rounded-full bg-surface-container-high text-[12px] font-bold text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors">中文</button>
+    <select id="currency-select" onchange="changeCurrency(this.value)" title="Currency" class="bg-surface-container-high border border-surface-variant rounded-full px-2 py-1.5 text-[12px] font-bold text-on-surface focus:border-primary focus:outline-none cursor-pointer">
+      <option value="TWD">TWD</option>
+      <option value="USD">USD</option>
+      <option value="JPY">JPY</option>
+      <option value="EUR">EUR</option>
+      <option value="GBP">GBP</option>
+      <option value="KRW">KRW</option>
+    </select>
   </div>
 </header>
 
@@ -156,7 +165,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <div class="flex flex-col gap-5 flex-1 w-full">
         <!-- Monthly Income Setting -->
         <div class="flex items-center justify-between">
-          <span class="font-label-lg text-[14px] text-on-surface-variant">💵 Monthly Income</span>
+          <span class="font-label-lg text-[14px] text-on-surface-variant" data-i18n="lbl_income">💵 Monthly Income</span>
           <div class="flex items-center gap-2">
             <span class="font-headline-md text-[20px] text-primary" id="income-display">$0</span>
             <button onclick="toggleIncomeEdit()" class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-surface-variant transition-colors" title="Edit income">
@@ -173,7 +182,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
         <!-- Spent vs Income bar -->
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-end mb-1">
-            <span class="font-label-lg text-[14px] text-on-surface-variant">💰 Spent</span>
+            <span class="font-label-lg text-[14px] text-on-surface-variant" data-i18n="lbl_spent">💰 Spent</span>
             <span class="font-body-md text-[14px] text-on-surface" id="fin-label">$0 / $0</span>
           </div>
           <div class="h-4 w-full bg-surface-container rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] relative">
@@ -183,7 +192,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
         <!-- Eco Health bar -->
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-end mb-1">
-            <span class="font-label-lg text-[14px] text-on-surface-variant">🌿 Eco Health</span>
+            <span class="font-label-lg text-[14px] text-on-surface-variant" data-i18n="lbl_eco_health">🌿 Eco Health</span>
             <span class="font-body-md text-[14px] text-on-surface" id="eco-label">0 / 750 kg</span>
           </div>
           <div class="h-4 w-full bg-surface-container rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] relative">
@@ -194,19 +203,19 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
         <div class="grid grid-cols-4 gap-3 mt-2">
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
             <div class="font-headline-md text-[18px] text-tertiary" id="s-remaining">$0</div>
-            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">REMAINING</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1" data-i18n="lbl_remaining">REMAINING</div>
           </div>
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
             <div class="font-headline-md text-[18px] text-primary" id="s-total">$0</div>
-            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">SPENT</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1" data-i18n="lbl_total">SPENT</div>
           </div>
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
             <div class="font-headline-md text-[18px] text-eco" id="s-carbon">0 kg</div>
-            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">CO₂e</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1" data-i18n="lbl_co2">CO₂e</div>
           </div>
           <div class="bg-surface-container rounded-xl p-3 text-center border border-surface-variant">
             <div class="font-headline-md text-[18px] text-on-surface" id="s-count">0</div>
-            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">TXNS</div>
+            <div class="font-label-lg text-[10px] text-on-surface-variant mt-1" data-i18n="lbl_txns">TXNS</div>
           </div>
         </div>
       </div>
@@ -231,7 +240,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <!-- Month Selector + Budget Bars -->
   <section>
     <div class="flex justify-between items-center mb-5">
-      <h3 class="font-headline-md text-[20px] font-bold text-on-surface">Budgets</h3>
+      <h3 class="font-headline-md text-[20px] font-bold text-on-surface" data-i18n="lbl_budgets">Budgets</h3>
       <input type="month" id="dash-month" onchange="loadDashboard()" class="bg-surface-container-high border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
     </div>
     <div id="budget-section" class="flex flex-col gap-5">
@@ -248,24 +257,24 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <div class="flex items-center justify-between mb-4">
       <div class="flex items-center gap-2">
         <span class="text-lg">✨</span>
-        <h2 class="font-headline-md text-[18px] font-bold text-on-surface">AI 消費分析</h2>
+        <h2 class="font-headline-md text-[18px] font-bold text-on-surface" data-i18n="ai_title">AI Analysis</h2>
       </div>
       <button id="ai-analysis-btn" onclick="runAiAnalysis()"
         class="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary font-bold text-[13px] px-4 py-2 rounded-full hover:bg-primary/20 active:scale-95 transition-all">
-        <span class="material-symbols-outlined text-[15px]">auto_awesome</span>分析
+        <span class="material-symbols-outlined text-[15px]">auto_awesome</span><span data-i18n="ai_btn">Analyze</span>
       </button>
     </div>
 
-    <!-- 初始提示 -->
+    <!-- idle state -->
     <div id="ai-analysis-idle" class="text-center py-5">
       <div class="text-4xl mb-3 opacity-60">🤖</div>
-      <p class="text-[13px] text-on-surface-variant leading-relaxed">點擊「分析」讓 AI 解讀<br>你這個月的消費模式</p>
+      <p id="ai-idle-text" class="text-[13px] text-on-surface-variant leading-relaxed">Click "Analyze" to let AI interpret<br>your spending patterns</p>
     </div>
 
-    <!-- 載入中 -->
+    <!-- loading -->
     <div id="ai-analysis-loading" style="display:none" class="text-center py-6">
       <div class="inline-block w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin mb-3"></div>
-      <p class="text-[13px] text-on-surface-variant" id="ai-loading-msg">AI 正在分析你的消費資料...</p>
+      <p class="text-[13px] text-on-surface-variant" id="ai-loading-msg">AI is analyzing your spending data...</p>
     </div>
 
     <!-- 分析結果 -->
@@ -282,26 +291,26 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <div class="grid grid-cols-2 gap-2" id="ai-stats-grid"></div>
       <!-- 類別佔比 Top 4 -->
       <div id="ai-cat-breakdown" class="space-y-2"></div>
-      <!-- 重新分析 -->
-      <button onclick="runAiAnalysis()" class="w-full text-center text-[12px] text-on-surface-variant hover:text-primary py-1 rounded-xl hover:bg-primary/5 transition-colors">
-        ↺ 重新分析
+      <!-- re-analyze -->
+      <button onclick="runAiAnalysis()" class="w-full text-center text-[12px] text-on-surface-variant hover:text-primary py-1 rounded-xl hover:bg-primary/5 transition-colors" data-i18n="ai_reanalyze">
+        ↺ Re-analyze
       </button>
     </div>
   </section>
 
   <section class="bg-surface-container rounded-[24px] p-6 border border-surface-variant shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
     <div class="flex justify-between items-center mb-5">
-      <h2 class="font-headline-md text-[20px] font-bold text-on-surface">Recent Activity</h2>
+      <h2 class="font-headline-md text-[20px] font-bold text-on-surface" data-i18n="lbl_recent">Recent Activity</h2>
     </div>
     <div id="recent-txs" class="space-y-3">
       <div class="text-center py-8 text-on-surface-variant">
         <div class="text-3xl mb-2 opacity-40">📦</div>No transactions yet
       </div>
     </div>
-    <button class="mt-4 w-full text-center font-label-lg text-[14px] text-primary hover:text-primary-fixed py-2 rounded-xl hover:bg-primary/10 transition-colors" onclick="goScreen('history')">See all →</button>
+    <button class="mt-4 w-full text-center font-label-lg text-[14px] text-primary hover:text-primary-fixed py-2 rounded-xl hover:bg-primary/10 transition-colors" onclick="goScreen('history')" data-i18n="lbl_see_all">See all →</button>
   </section>
   <div class="mt-4 text-center">
-    <button class="font-label-lg text-[13px] text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-variant transition-colors" onclick="loadSeed()">📋 Load Demo Data</button>
+    <button class="font-label-lg text-[13px] text-on-surface-variant hover:text-primary px-4 py-2 rounded-full hover:bg-surface-variant transition-colors" onclick="loadSeed()" data-i18n="lbl_demo">📋 Load Demo Data</button>
   </div>
 </div>
 </div>
@@ -312,9 +321,9 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <input type="month" id="ana-month" onchange="loadAnalytics()" class="bg-surface-container-high border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
     <div class="flex gap-2 flex-wrap">
-      <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" onclick="doExportCSV()">Export CSV</button>
-      <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" id="gen-btn" onclick="generateReport()">✨ AI Report</button>
-      <button class="font-label-lg text-[13px] bg-secondary/10 border border-secondary/30 text-secondary px-4 py-2 rounded-full hover:bg-secondary/20 active:scale-95 transition-all" onclick="openCompModal()">📊 收支分析</button>
+      <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" onclick="doExportCSV()" data-i18n="btn_csv">Export CSV</button>
+      <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" id="gen-btn" onclick="generateReport()" data-i18n="btn_ai_report">✨ AI Report</button>
+      <button class="font-label-lg text-[13px] bg-secondary/10 border border-secondary/30 text-secondary px-4 py-2 rounded-full hover:bg-secondary/20 active:scale-95 transition-all" onclick="openCompModal()" data-i18n="btn_comp_analysis">📊 Income Analysis</button>
     </div>
   </div>
   <!-- AI Report -->
@@ -325,22 +334,22 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <!-- Charts row 1 -->
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
     <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant">
-      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">📈 Daily Spending Trend</h3>
+      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="chart_daily">📈 Daily Spending Trend</h3>
       <div class="relative h-[220px]"><canvas id="trendChart"></canvas></div>
     </div>
     <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant">
-      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">📊 Spending by Category</h3>
+      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="chart_cat">📊 Spending by Category</h3>
       <div class="relative h-[220px]"><canvas id="catChart"></canvas></div>
     </div>
   </div>
   <!-- Carbon chart -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">🌿 Carbon by Category (kg CO₂e)</h3>
+    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="chart_carbon">🌿 Carbon by Category (kg CO₂e)</h3>
     <div class="relative h-[200px]"><canvas id="carbonChart"></canvas></div>
   </div>
   <!-- Emotion chart — NEW -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">😊 Spending by Emotion</h3>
+    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="chart_emotion">😊 Spending by Emotion</h3>
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-center">
       <div class="relative h-[180px]"><canvas id="emotionChart"></canvas></div>
       <div id="emotion-breakdown" class="space-y-3 text-sm"></div>
@@ -351,31 +360,31 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <div class="bg-surface-container-high rounded-[20px] p-5 text-center border border-surface-variant">
       <div class="text-3xl mb-2">🚗</div>
       <div class="font-headline-md text-[20px] text-on-surface" id="eq-km">0 km</div>
-      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">of driving</div>
+      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1" data-i18n="lbl_driving">of driving</div>
     </div>
     <div class="bg-surface-container-high rounded-[20px] p-5 text-center border border-surface-variant">
       <div class="text-3xl mb-2">🌳</div>
       <div class="font-headline-md text-[20px] text-on-surface" id="eq-trees">0</div>
-      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">trees needed / year</div>
+      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1" data-i18n="lbl_trees">trees needed / year</div>
     </div>
   </div>
   <!-- ESG -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">🌍 ESG: vs Taiwan Average</h3>
+    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="esg_title">🌍 ESG: vs Taiwan Average</h3>
     <div class="flex justify-between text-sm font-semibold mb-2">
-      <span class="text-on-surface-variant">Your carbon</span>
+      <span class="text-on-surface-variant" data-i18n="esg_your_carbon">Your carbon</span>
       <span class="text-on-surface" id="esg-val">0 / 750 kg</span>
     </div>
     <div class="h-3 w-full bg-surface-container-lowest rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] relative">
       <div class="absolute top-0 left-0 h-full rounded-full transition-all duration-500" id="esg-fill" style="width:0%;background:#c0ceab"></div>
     </div>
-    <div class="text-[12px] text-on-surface-variant mt-2 text-right">ⓘ Taiwan avg: 750 kg CO₂e / month</div>
+    <div class="text-[12px] text-on-surface-variant mt-2 text-right" data-i18n="esg_avg">ⓘ Taiwan avg: 750 kg CO₂e / month</div>
   </div>
-  <!-- Anomaly Detection — NEW -->
+  <!-- Anomaly Detection -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant">
     <div class="flex items-center justify-between mb-4">
-      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase">🔍 Anomaly Detection</h3>
-      <button onclick="loadAnomalies()" class="font-label-lg text-[12px] text-primary hover:bg-primary/10 px-3 py-1 rounded-full transition-colors">Refresh</button>
+      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase" data-i18n="anomaly_title">🔍 Anomaly Detection</h3>
+      <button onclick="loadAnomalies()" class="font-label-lg text-[12px] text-primary hover:bg-primary/10 px-3 py-1 rounded-full transition-colors" data-i18n="lbl_refresh">Refresh</button>
     </div>
     <div id="anomaly-summary" class="text-[13px] text-on-surface-variant mb-3"></div>
     <div id="anomaly-list" class="space-y-2">
@@ -390,7 +399,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <div class="flex-1 min-w-[200px]">
       <div class="relative">
         <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
-        <input type="text" id="h-q" placeholder="Search transactions..." oninput="debouncedSearch()" class="w-full bg-surface-container-high border border-surface-variant rounded-xl pl-10 pr-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none">
+        <input type="text" id="h-q" placeholder="Search transactions..." data-i18n-ph="search_ph" oninput="debouncedSearch()" class="w-full bg-surface-container-high border border-surface-variant rounded-xl pl-10 pr-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none">
       </div>
     </div>
     <input type="month" id="hist-month" onchange="doSearch()" class="bg-surface-container-high border border-surface-variant rounded-xl px-3 py-3 text-sm text-on-surface focus:border-primary focus:outline-none">
@@ -399,7 +408,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-3" id="filter-cats"></div>
   <div class="flex justify-between items-center mb-4">
     <span id="h-count" class="text-sm text-on-surface-variant">—</span>
-    <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-3 py-1 rounded-full transition-colors" onclick="clearFilters()">Clear</button>
+    <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-3 py-1 rounded-full transition-colors" onclick="clearFilters()" data-i18n="btn_clear">Clear</button>
   </div>
   <div id="h-list" class="space-y-3">
     <div class="text-center py-8 text-on-surface-variant"><div class="text-3xl mb-2 opacity-40">📋</div>Loading...</div>
@@ -418,20 +427,20 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <div class="grid grid-cols-3 gap-3 mb-6">
     <div class="bg-surface-container rounded-xl p-4 text-center border border-surface-variant">
       <div class="font-headline-md text-[20px] text-eco" id="eco-today">0</div>
-      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">TODAY (kg)</div>
+      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1" data-i18n="eco_today">TODAY (kg)</div>
     </div>
     <div class="bg-surface-container rounded-xl p-4 text-center border border-surface-variant">
       <div class="font-headline-md text-[20px] text-[#fbbf24]" id="eco-week">0</div>
-      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">THIS WEEK</div>
+      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1" data-i18n="eco_week">THIS WEEK</div>
     </div>
     <div class="bg-surface-container rounded-xl p-4 text-center border border-surface-variant">
       <div class="font-headline-md text-[20px] text-carbon" id="eco-month">0</div>
-      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1">THIS MONTH</div>
+      <div class="font-label-lg text-[11px] text-on-surface-variant mt-1" data-i18n="eco_month">THIS MONTH</div>
     </div>
   </div>
   <!-- Rank Progress -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4">🏆 Rank Progress</h3>
+    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="eco_rank">🏆 Rank Progress</h3>
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-3">
         <span class="text-2xl" id="eco-rank-emoji">🌱</span>
@@ -443,33 +452,33 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <div class="h-full rounded-full bg-eco transition-all duration-500" id="rank-fill" style="width:0%"></div>
     </div>
     <div class="text-sm text-on-surface-variant mt-2" id="rank-progress-lbl"></div>
-    <div class="text-[12px] text-outline mt-3">🌱 Seedling (0) → 🌿 Sprout (50) → 🌳 Guardian (150) → 🌍 Earth Protector (300)</div>
+    <div class="text-[12px] text-outline mt-3" data-i18n="rank_tiers">🌱 Seedling (0) → 🌿 Sprout (50) → 🌳 Guardian (150) → 🌍 Earth Protector (300)</div>
   </div>
 
   <!-- Budget Manager — NEW full CRUD UI -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
     <div class="flex items-center justify-between mb-5">
-      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase">💰 Budget Manager</h3>
+      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase" data-i18n="eco_budget">💰 Budget Manager</h3>
       <button onclick="toggleBudgetForm()" class="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary font-bold text-[13px] px-4 py-2 rounded-full hover:bg-primary/20 transition-colors">
-        <span class="material-symbols-outlined text-[16px]">add</span> Add Budget
+        <span class="material-symbols-outlined text-[16px]">add</span> <span data-i18n="eco_add_budget">Add Budget</span>
       </button>
     </div>
     <!-- Add / Edit Budget Form -->
     <div id="budget-form" style="display:none" class="bg-surface-container-high rounded-xl p-4 mb-5 border border-surface-variant">
-      <div class="text-[13px] font-bold text-on-surface mb-3" id="budget-form-title">New Budget</div>
+      <div class="text-[13px] font-bold text-on-surface mb-3" id="budget-form-title" data-i18n="eco_new_budget">New Budget</div>
       <div class="grid grid-cols-1 gap-3">
         <div>
-          <label class="font-label-lg text-[11px] text-on-surface-variant uppercase block mb-1">Category</label>
+          <label class="font-label-lg text-[11px] text-on-surface-variant uppercase block mb-1" data-i18n="eco_cat">Category</label>
           <select id="budget-cat-select" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none"></select>
         </div>
         <div>
-          <label class="font-label-lg text-[11px] text-on-surface-variant uppercase block mb-1">Monthly Limit (TWD)</label>
+          <label class="font-label-lg text-[11px] text-on-surface-variant uppercase block mb-1" data-i18n="eco_limit">Monthly Limit (TWD)</label>
           <input type="number" id="budget-limit-input" placeholder="e.g. 800" min="1" step="50" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
         </div>
       </div>
       <div class="flex gap-2 mt-3">
-        <button onclick="saveBudget()" class="flex-1 bg-primary text-on-primary font-bold py-2 rounded-xl text-sm hover:scale-[1.01] active:scale-95 transition-all">Save</button>
-        <button onclick="toggleBudgetForm(false)" class="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-xl text-sm border border-surface-variant transition-colors">Cancel</button>
+        <button onclick="saveBudget()" class="flex-1 bg-primary text-on-primary font-bold py-2 rounded-xl text-sm hover:scale-[1.01] active:scale-95 transition-all" data-i18n="btn_save">Save</button>
+        <button onclick="toggleBudgetForm(false)" class="text-on-surface-variant hover:text-on-surface px-4 py-2 rounded-xl text-sm border border-surface-variant transition-colors" data-i18n="btn_cancel">Cancel</button>
       </div>
     </div>
     <!-- Budget List -->
@@ -480,7 +489,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 
   <!-- Methodology -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-3">ⓘ How Carbon is Calculated</h3>
+    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-3" data-i18n="eco_method">ⓘ How Carbon is Calculated</h3>
     <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-1">
       <p><strong class="text-on-surface">Method:</strong> GHG Protocol Scope 3 spend-based methodology.</p>
       <p><strong class="text-on-surface">Formula:</strong> carbon_kg = amount (TWD) × emission_factor (kg CO₂e/TWD)</p>
@@ -497,17 +506,17 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 <!-- ═══ BOTTOM NAV (Mobile) ══════════════════════════════════════════════ -->
 <nav class="mobile-only fixed bottom-0 left-0 right-0 h-[68px] bg-surface-container-low border-t border-surface-variant flex items-center justify-around z-50 px-2">
   <button class="nav-btn active flex flex-col items-center gap-1 px-4 py-2 text-[11px] font-semibold transition-colors" id="nav-home" onclick="goScreen('home')">
-    <span class="material-symbols-outlined icon-fill text-[22px]">home</span>Home
+    <span class="material-symbols-outlined icon-fill text-[22px]">home</span><span data-i18n="nav_home">Home</span>
   </button>
   <button class="nav-btn flex flex-col items-center gap-1 px-4 py-2 text-[11px] font-semibold text-outline transition-colors" id="nav-analytics" onclick="goScreen('analytics')">
-    <span class="material-symbols-outlined text-[22px]">trending_up</span>Stats
+    <span class="material-symbols-outlined text-[22px]">trending_up</span><span data-i18n="nav_stats">Stats</span>
   </button>
   <button onclick="openAddSheet()" class="w-14 h-14 rounded-full bg-primary text-on-primary font-bold text-2xl -mt-6 shadow-[0_4px_20px_rgba(255,221,219,0.3)] active:scale-90 transition-transform flex items-center justify-center">+</button>
   <button class="nav-btn flex flex-col items-center gap-1 px-4 py-2 text-[11px] font-semibold text-outline transition-colors" id="nav-history" onclick="goScreen('history')">
-    <span class="material-symbols-outlined text-[22px]">receipt_long</span>History
+    <span class="material-symbols-outlined text-[22px]">receipt_long</span><span data-i18n="nav_history">History</span>
   </button>
   <button class="nav-btn flex flex-col items-center gap-1 px-4 py-2 text-[11px] font-semibold text-outline transition-colors" id="nav-eco" onclick="goScreen('eco')">
-    <span class="material-symbols-outlined text-[22px]">eco</span>Eco
+    <span class="material-symbols-outlined text-[22px]">eco</span><span data-i18n="nav_eco_short">Eco</span>
   </button>
 </nav>
 
@@ -518,8 +527,8 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <!-- Header -->
     <div class="flex items-center justify-between mb-5">
       <div>
-        <h2 class="font-headline-md text-[20px] font-bold text-on-surface">📊 收支分析</h2>
-        <p class="text-[12px] text-on-surface-variant mt-0.5">所有時間的完整統計</p>
+        <h2 class="font-headline-md text-[20px] font-bold text-on-surface" data-i18n="comp_title">📊 Income & Expense Analysis</h2>
+        <p class="text-[12px] text-on-surface-variant mt-0.5" data-i18n="comp_subtitle">Complete all-time statistics</p>
       </div>
       <button onclick="closeCompModal()" class="text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-surface-variant transition-colors">
         <span class="material-symbols-outlined text-[22px]">close</span>
@@ -529,7 +538,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <!-- Loading -->
     <div id="comp-loading" class="text-center py-12">
       <div class="inline-block w-8 h-8 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin mb-3"></div>
-      <p class="text-[13px] text-on-surface-variant">計算統計中...</p>
+      <p class="text-[13px] text-on-surface-variant" data-i18n="comp_loading">Calculating statistics...</p>
     </div>
 
     <!-- Content -->
@@ -543,13 +552,13 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 
       <!-- Monthly Trend Chart -->
       <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant mb-5">
-        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">📅 各月收支趨勢</h3>
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3" data-i18n="comp_trend">📅 Monthly Trend</h3>
         <div class="relative h-[220px]"><canvas id="compTrendChart"></canvas></div>
       </div>
 
       <!-- Category Breakdown -->
       <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant mb-5">
-        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">🗂️ 各類別支出佔比</h3>
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3" data-i18n="comp_cat">🗂️ Category Breakdown</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
           <div class="relative h-[200px]"><canvas id="compCatChart"></canvas></div>
           <div id="comp-cat-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1 no-scrollbar"></div>
@@ -558,7 +567,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 
       <!-- Monthly detail table -->
       <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant">
-        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">🗓️ 月份明細</h3>
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3" data-i18n="comp_table">🗓️ Monthly Detail</h3>
         <div id="comp-month-table" class="space-y-2"></div>
       </div>
     </div>
@@ -566,7 +575,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <!-- No data -->
     <div id="comp-nodata" style="display:none" class="text-center py-12">
       <div class="text-4xl mb-3 opacity-40">📭</div>
-      <p class="text-[14px] text-on-surface-variant">尚無交易記錄，請先新增支出。</p>
+      <p class="text-[14px] text-on-surface-variant" data-i18n="comp_no_data">No transactions yet. Please add one first.</p>
     </div>
   </div>
 </div>
@@ -575,52 +584,52 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeAddSheet()"></div>
 <div class="bottom-sheet" id="add-sheet">
   <div class="w-9 h-1 bg-surface-variant rounded-full mx-auto mt-3 mb-5"></div>
-  <h3 class="font-headline-md text-[20px] font-bold text-on-surface mb-5">Add Transaction</h3>
+  <h3 class="font-headline-md text-[20px] font-bold text-on-surface mb-5" data-i18n="sheet_title">Add Transaction</h3>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Describe your expense</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_describe">Describe your expense</label>
     <textarea id="nlp-text" rows="2" placeholder='e.g. "Lunch at MOS Burger 180, feeling stressed"' class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none resize-none"></textarea>
   </div>
-  <button id="parse-btn" onclick="doParse()" class="w-full border border-dashed border-outline rounded-xl py-3 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors mb-4">✨ Parse with AI</button>
-  <div class="text-center text-[12px] text-outline mb-4">— or fill manually —</div>
+  <button id="parse-btn" onclick="doParse()" class="w-full border border-dashed border-outline rounded-xl py-3 text-sm font-semibold text-primary hover:bg-primary/5 transition-colors mb-4" data-i18n="sheet_parse">✨ Parse with AI</button>
+  <div class="text-center text-[12px] text-outline mb-4" data-i18n="sheet_or_manual">— or fill manually —</div>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Amount (TWD)</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_amount">Amount (TWD)</label>
     <input type="number" id="add-amount" placeholder="0" min="0" step="1" oninput="updateCarbonEst()" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary focus:outline-none">
   </div>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Category</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_cat">Category</label>
     <div class="cat-grid" id="cat-grid"></div>
   </div>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Date</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_date">Date</label>
     <input type="date" id="add-date" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary focus:outline-none">
   </div>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Note</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_note">Note</label>
     <input type="text" id="add-note" placeholder="Optional description" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none">
   </div>
-  <!-- Context Tag — NEW -->
+  <!-- Context Tag -->
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Context Tag</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_ctx">Context Tag</label>
     <div class="flex gap-2 flex-wrap" id="ctx-chips">
-      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="none" onclick="setCtxTag(this)">None</button>
-      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="social" onclick="setCtxTag(this)">🎉 Social</button>
-      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="work-related" onclick="setCtxTag(this)">💼 Work</button>
-      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="study-related" onclick="setCtxTag(this)">📚 Study</button>
-      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="health-related" onclick="setCtxTag(this)">🏃 Health</button>
+      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="none" onclick="setCtxTag(this)" data-i18n="ctx_none">None</button>
+      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="social" onclick="setCtxTag(this)" data-i18n="ctx_social">🎉 Social</button>
+      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="work-related" onclick="setCtxTag(this)" data-i18n="ctx_work">💼 Work</button>
+      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="study-related" onclick="setCtxTag(this)" data-i18n="ctx_study">📚 Study</button>
+      <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="health-related" onclick="setCtxTag(this)" data-i18n="ctx_health">🏃 Health</button>
     </div>
   </div>
   <div class="mb-4">
-    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2">Mood</label>
+    <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_mood">Mood</label>
     <div class="flex gap-2">
-      <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="positive" onclick="setEmotion(this)">😊 Happy</button>
-      <button class="mood-chip active px-4 py-2 rounded-full text-sm font-semibold border border-primary bg-primary/10 text-primary transition-colors" data-em="neutral" onclick="setEmotion(this)">😐 Neutral</button>
-      <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="negative" onclick="setEmotion(this)">😟 Stressed</button>
+      <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="positive" onclick="setEmotion(this)" data-i18n="mood_happy">😊 Happy</button>
+      <button class="mood-chip active px-4 py-2 rounded-full text-sm font-semibold border border-primary bg-primary/10 text-primary transition-colors" data-em="neutral" onclick="setEmotion(this)" data-i18n="mood_neutral">😐 Neutral</button>
+      <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="negative" onclick="setEmotion(this)" data-i18n="mood_stressed">😟 Stressed</button>
     </div>
   </div>
   <div class="rounded-xl p-4 mb-5 text-sm font-semibold flex items-center gap-2 transition-colors border" id="carbon-est" style="background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.2);color:#4ade80">
-    🌿 Estimated carbon: <strong id="est-val">0.00</strong> kg CO₂e
+    <span data-i18n="sheet_carbon">🌿 Estimated carbon</span>: <strong id="est-val">0.00</strong> kg CO₂e
   </div>
-  <button onclick="saveTransaction()" class="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(255,221,219,0.2)] hover:scale-[1.01] active:scale-95 transition-all duration-200 text-[16px]">
+  <button onclick="saveTransaction()" class="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(255,221,219,0.2)] hover:scale-[1.01] active:scale-95 transition-all duration-200 text-[16px]" data-i18n="btn_save_tx">
     💾 Save Transaction
   </button>
 </div>
@@ -630,6 +639,168 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 <!-- ═══ JAVASCRIPT ═══════════════════════════════════════════════════════ -->
 <script>
 'use strict';
+
+// ── Currency ──────────────────────────────────────────────────────────────────
+const CURRENCY_RATES = {
+  TWD:{ rate:1,      sym:'NT$', dec:0 },
+  USD:{ rate:0.031,  sym:'$',   dec:2 },
+  JPY:{ rate:4.5,    sym:'¥',   dec:0 },
+  EUR:{ rate:0.029,  sym:'€',   dec:2 },
+  GBP:{ rate:0.024,  sym:'£',   dec:2 },
+  KRW:{ rate:41,     sym:'₩',   dec:0 },
+};
+let currentCurrency = localStorage.getItem('sb_currency') || 'TWD';
+function fmtMoney(n) {
+  const c = CURRENCY_RATES[currentCurrency] || CURRENCY_RATES.TWD;
+  return c.sym + (n * c.rate).toFixed(c.dec);
+}
+function changeCurrency(val) {
+  currentCurrency = val;
+  localStorage.setItem('sb_currency', val);
+  [trendChart, catChart, carbonChart, emotionChart].forEach(c => { if(c) c.destroy(); });
+  trendChart = catChart = carbonChart = emotionChart = null;
+  if (typeof compTrendChart !== 'undefined' && compTrendChart) { compTrendChart.destroy(); compTrendChart = null; }
+  if (typeof compCatChart   !== 'undefined' && compCatChart)   { compCatChart.destroy();   compCatChart   = null; }
+  refreshCurrentScreen();
+}
+function refreshCurrentScreen() {
+  const cur = document.querySelector('.screen.active')?.id?.replace('screen-','');
+  if (cur === 'home')           loadDashboard();
+  else if (cur === 'analytics') loadAnalytics();
+  else if (cur === 'history')   doSearch();
+  else if (cur === 'eco')       loadEcoScreen();
+  if (document.getElementById('comp-modal')?.classList.contains('open')) openCompModal();
+}
+
+// ── i18n ──────────────────────────────────────────────────────────────────────
+let currentLang = localStorage.getItem('sb_lang') || 'en';
+const I18N = {
+  en:{
+    nav_dashboard:'Dashboard',nav_analytics:'Analytics',nav_history:'History',
+    nav_eco:'Eco Profile',nav_eco_short:'Eco',nav_home:'Home',nav_stats:'Stats',nav_add_tx:'Add Transaction',
+    title_home:'Overview',title_analytics:'Analytics',title_history:'History',title_eco:'Eco Profile',
+    lbl_income:'💵 Monthly Income',lbl_spent:'💰 Spent',lbl_eco_health:'🌿 Eco Health',
+    lbl_remaining:'REMAINING',lbl_total:'SPENT',lbl_co2:'CO₂e',lbl_txns:'TXNS',
+    lbl_budgets:'Budgets',lbl_recent:'Recent Activity',lbl_see_all:'See all →',lbl_demo:'📋 Load Demo Data',
+    ai_title:'AI Analysis',ai_btn:'Analyze',
+    ai_idle:'Click "Analyze" to let AI interpret<br>your spending patterns',
+    ai_reanalyze:'↺ Re-analyze',ai_powered:'Powered by Claude AI',ai_top_cats:'Top Categories',
+    ai_loading_1:'AI is analyzing your spending data...',ai_loading_2:'Calculating category percentages...',
+    ai_loading_3:'Evaluating carbon footprint...',ai_loading_4:'Generating personalized insights...',
+    chart_daily:'📈 Daily Spending Trend',chart_cat:'📊 Spending by Category',
+    chart_carbon:'🌿 Carbon by Category (kg CO₂e)',chart_emotion:'😊 Spending by Emotion',
+    lbl_driving:'of driving',lbl_trees:'trees needed / year',
+    esg_title:'🌍 ESG: vs Taiwan Average',esg_your_carbon:'Your carbon',esg_avg:'ⓘ Taiwan avg: 750 kg CO₂e / month',
+    anomaly_title:'🔍 Anomaly Detection',lbl_refresh:'Refresh',
+    btn_csv:'Export CSV',btn_ai_report:'✨ AI Report',btn_comp_analysis:'📊 Income Analysis',
+    search_ph:'Search transactions...',btn_clear:'Clear',
+    eco_today:'TODAY (kg)',eco_week:'THIS WEEK',eco_month:'THIS MONTH',
+    eco_rank:'🏆 Rank Progress',eco_budget:'💰 Budget Manager',eco_add_budget:'Add Budget',
+    eco_method:'ⓘ How Carbon is Calculated',eco_new_budget:'New Budget',eco_cat:'Category',eco_limit:'Monthly Limit (TWD)',
+    btn_save:'Save',btn_cancel:'Cancel',
+    rank_tiers:'🌱 Seedling (0) → 🌿 Sprout (50) → 🌳 Guardian (150) → 🌍 Earth Protector (300)',
+    sheet_title:'Add Transaction',sheet_describe:'Describe your expense',sheet_parse:'✨ Parse with AI',
+    sheet_or_manual:'— or fill manually —',sheet_amount:'Amount (TWD)',sheet_cat:'Category',
+    sheet_date:'Date',sheet_note:'Note',sheet_ctx:'Context Tag',sheet_mood:'Mood',
+    sheet_carbon:'🌿 Estimated carbon',btn_save_tx:'💾 Save Transaction',
+    mood_happy:'😊 Happy',mood_neutral:'😐 Neutral',mood_stressed:'😟 Stressed',
+    ctx_none:'None',ctx_social:'🎉 Social',ctx_work:'💼 Work',ctx_study:'📚 Study',ctx_health:'🏃 Health',
+    comp_title:'📊 Income & Expense Analysis',comp_subtitle:'Complete all-time statistics',
+    comp_loading:'Calculating statistics...',comp_trend:'📅 Monthly Trend',
+    comp_cat:'🗂️ Category Breakdown',comp_table:'🗓️ Monthly Detail',
+    comp_no_data:'No transactions yet. Please add one first.',
+    comp_lbl_expense:'Total Expense',comp_lbl_income:'Total Income',comp_lbl_net:'Net',comp_not_set:'Not Set',
+    comp_avg_monthly:'AVG MONTHLY',comp_avg_daily:'AVG DAILY',comp_hi_month:'HIGHEST MONTH',comp_lo_month:'LOWEST MONTH',
+    no_txns:'No transactions yet.<br>Tap + to add one!',
+    pts_to_next:(n)=>`${n} pts to next rank`,max_rank:'Max rank achieved! 🎉',max_rank_eco:'Max rank achieved! 🌍',
+    no_anomalies:'✅ No anomalies detected. Spending looks normal!',
+    click_refresh:'Click Refresh to analyse spending patterns.',
+    no_budgets:'No budgets set yet.',no_budgets_add:'No budgets set. Add one above!',
+    over_budget:'⚠️ Over',left_budget:'Left',
+    txn_count:(n)=>`${n} transaction${n!==1?'s':''}`,
+    confirm_demo:'Load 20 demo transactions for June 2026?',
+    ai_no_txns:'No transactions this month',ai_error:'AI analysis failed, please try again',
+    report_failed:'Report failed',report_gen:'Generating...',anomaly_failed:'Anomaly analysis failed',
+    seed_failed:'Seed failed',seed_loaded:(n)=>`Demo loaded — ${n} transactions`,
+    no_results:'No transactions found',comp_fail:'Analysis load failed',
+    lbl_total_spent:'TOTAL SPENT',lbl_transactions:'TRANSACTIONS',lbl_avg_day:'AVG / DAY',lbl_savings:'SAVINGS',
+    comp_expense_label:'Expense',comp_income_label:'Income',
+  },
+  zh:{
+    nav_dashboard:'儀表板',nav_analytics:'分析',nav_history:'歷史記錄',
+    nav_eco:'碳足跡',nav_eco_short:'碳足跡',nav_home:'首頁',nav_stats:'統計',nav_add_tx:'新增交易',
+    title_home:'總覽',title_analytics:'分析',title_history:'歷史記錄',title_eco:'碳足跡',
+    lbl_income:'💵 每月收入',lbl_spent:'💰 支出',lbl_eco_health:'🌿 碳健康',
+    lbl_remaining:'剩餘',lbl_total:'已花',lbl_co2:'碳排放',lbl_txns:'筆數',
+    lbl_budgets:'預算',lbl_recent:'最近記錄',lbl_see_all:'查看全部 →',lbl_demo:'📋 載入範例資料',
+    ai_title:'AI 消費分析',ai_btn:'分析',
+    ai_idle:'點擊「分析」讓 AI 解讀<br>你這個月的消費模式',
+    ai_reanalyze:'↺ 重新分析',ai_powered:'Powered by Claude AI',ai_top_cats:'主要類別',
+    ai_loading_1:'AI 正在分析你的消費資料...',ai_loading_2:'計算各類別佔比中...',
+    ai_loading_3:'評估碳足跡影響...',ai_loading_4:'生成個人化建議...',
+    chart_daily:'📈 每日消費趨勢',chart_cat:'📊 各類別消費',
+    chart_carbon:'🌿 各類別碳排放 (kg CO₂e)',chart_emotion:'😊 情緒消費分析',
+    lbl_driving:'公里行駛距離',lbl_trees:'需要種的樹 / 年',
+    esg_title:'🌍 ESG：與台灣平均比較',esg_your_carbon:'您的碳排放',esg_avg:'ⓘ 台灣平均：750 kg CO₂e / 月',
+    anomaly_title:'🔍 異常偵測',lbl_refresh:'重新整理',
+    btn_csv:'匯出 CSV',btn_ai_report:'✨ AI 報告',btn_comp_analysis:'📊 收支分析',
+    search_ph:'搜尋交易記錄...',btn_clear:'清除',
+    eco_today:'今天 (kg)',eco_week:'本週',eco_month:'本月',
+    eco_rank:'🏆 等級進度',eco_budget:'💰 預算管理',eco_add_budget:'新增預算',
+    eco_method:'ⓘ 碳排放計算方式',eco_new_budget:'新增預算',eco_cat:'類別',eco_limit:'每月限額 (TWD)',
+    btn_save:'儲存',btn_cancel:'取消',
+    rank_tiers:'🌱 幼苗 (0) → 🌿 嫩芽 (50) → 🌳 守護者 (150) → 🌍 地球守護者 (300)',
+    sheet_title:'新增交易',sheet_describe:'描述您的消費',sheet_parse:'✨ AI 智慧解析',
+    sheet_or_manual:'— 或手動填寫 —',sheet_amount:'金額 (TWD)',sheet_cat:'類別',
+    sheet_date:'日期',sheet_note:'備註',sheet_ctx:'情境標籤',sheet_mood:'心情',
+    sheet_carbon:'🌿 預估碳排放',btn_save_tx:'💾 儲存交易',
+    mood_happy:'😊 開心',mood_neutral:'😐 一般',mood_stressed:'😟 焦慮',
+    ctx_none:'無',ctx_social:'🎉 社交',ctx_work:'💼 工作',ctx_study:'📚 學習',ctx_health:'🏃 健康',
+    comp_title:'📊 收支分析',comp_subtitle:'所有時間的完整統計',
+    comp_loading:'計算統計中...',comp_trend:'📅 各月收支趨勢',
+    comp_cat:'🗂️ 各類別支出佔比',comp_table:'🗓️ 月份明細',
+    comp_no_data:'尚無交易記錄，請先新增支出。',
+    comp_lbl_expense:'總支出',comp_lbl_income:'總收入',comp_lbl_net:'淨額',comp_not_set:'未設定',
+    comp_avg_monthly:'平均每月花費',comp_avg_daily:'平均每日花費',comp_hi_month:'最高消費月份',comp_lo_month:'最低消費月份',
+    no_txns:'尚無交易記錄。<br>點擊 + 新增！',
+    pts_to_next:(n)=>`還差 ${n} 點升級`,max_rank:'已達最高等級！🎉',max_rank_eco:'已達最高等級！🌍',
+    no_anomalies:'✅ 未偵測到異常，消費看起來正常！',
+    click_refresh:'點擊「重新整理」分析消費模式。',
+    no_budgets:'尚未設定預算。',no_budgets_add:'尚未設定預算，請在上方新增！',
+    over_budget:'⚠️ 超支',left_budget:'剩餘',
+    txn_count:(n)=>`${n} 筆`,
+    confirm_demo:'載入 2026 年 6 月的 20 筆範例交易？',
+    ai_no_txns:'這個月還沒有消費記錄',ai_error:'AI 分析失敗，請稍後再試',
+    report_failed:'報告產生失敗',report_gen:'產生中...',anomaly_failed:'異常分析失敗',
+    seed_failed:'載入失敗',seed_loaded:(n)=>`已載入 ${n} 筆範例交易`,
+    no_results:'找不到交易記錄',comp_fail:'分析載入失敗',
+    lbl_total_spent:'總支出',lbl_transactions:'筆數',lbl_avg_day:'日均花費',lbl_savings:'結餘',
+    comp_expense_label:'支出',comp_income_label:'收入',
+  }
+};
+function t(key,...args) {
+  const v = I18N[currentLang]?.[key] ?? I18N.en[key] ?? key;
+  return typeof v === 'function' ? v(...args) : v;
+}
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'zh' : 'en';
+  localStorage.setItem('sb_lang', currentLang);
+  applyLang();
+  refreshCurrentScreen();
+}
+function applyLang() {
+  const btn = document.getElementById('lang-btn');
+  if (btn) btn.textContent = currentLang === 'en' ? '中文' : 'EN';
+  TITLES.home = t('title_home'); TITLES.analytics = t('title_analytics');
+  TITLES.history = t('title_history'); TITLES.eco = t('title_eco');
+  const cur = document.querySelector('.screen.active')?.id?.replace('screen-','');
+  if (cur) document.getElementById('page-title').textContent = TITLES[cur] || '';
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  const ait = document.getElementById('ai-idle-text');
+  if (ait) ait.innerHTML = t('ai_idle');
+}
+
 const CUR_MONTH = new Date().toISOString().slice(0,7);
 const TODAY     = new Date().toISOString().slice(0,10);
 
@@ -673,6 +844,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('ana-month').value  = CUR_MONTH;
   document.getElementById('add-date').value   = TODAY;
 
+  // Restore currency dropdown
+  const currSel = document.getElementById('currency-select');
+  if (currSel) currSel.value = currentCurrency;
+
   // Load categories from backend (sync CATS & CARBON_FACTORS)
   try {
     const cats = await api('/api/categories');
@@ -688,6 +863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   buildFilterChips();
   populateBudgetCatSelect();
   checkAI();
+  applyLang();
   loadDashboard();
 });
 
@@ -771,10 +947,10 @@ async function loadDashboard() {
     const income    = incomeData.monthly_income || 0;
     const remaining = Math.max(0, income - stats.total);
 
-    document.getElementById('income-display').textContent = '$' + fmt(income);
+    document.getElementById('income-display').textContent = fmtMoney(income);
     document.getElementById('income-input').value = income || '';
-    document.getElementById('s-total').textContent = '$' + fmt(stats.total);
-    document.getElementById('s-remaining').textContent = '$' + fmt(remaining);
+    document.getElementById('s-total').textContent = fmtMoney(stats.total);
+    document.getElementById('s-remaining').textContent = fmtMoney(remaining);
     document.getElementById('s-remaining').style.color = remaining > 0 ? '#dceac5' : '#ffb4ab';
     document.getElementById('s-carbon').textContent = carbon.total_month.toFixed(1) + ' kg';
     document.getElementById('s-count').textContent = stats.count;
@@ -785,8 +961,8 @@ async function loadDashboard() {
     document.getElementById('rank-name').textContent  = eco.rank;
     document.getElementById('eco-score').textContent  = eco.eco_score;
     document.getElementById('rank-sub').textContent   = eco.next_rank_at
-      ? `${eco.next_rank_at - eco.eco_score} pts to next rank`
-      : 'Max rank achieved! 🎉';
+      ? t('pts_to_next', eco.next_rank_at - eco.eco_score)
+      : t('max_rank');
 
     const cc = eco.monthly_carbon < 300 ? 'text-eco'
              : eco.monthly_carbon < 600 ? 'text-[#fbbf24]'
@@ -798,7 +974,7 @@ async function loadDashboard() {
     const finPct   = Math.min(100, stats.total / finTotal * 100);
     document.getElementById('fin-fill').style.width      = finPct + '%';
     document.getElementById('fin-fill').style.background = finPct < 70 ? '#c0ceab' : finPct < 90 ? '#e8d284' : '#ffb4ab';
-    document.getElementById('fin-label').textContent     = `$${fmt(stats.total)} / $${fmt(finTotal)}`;
+    document.getElementById('fin-label').textContent     = `${fmtMoney(stats.total)} / ${fmtMoney(finTotal)}`;
 
     // Eco progress bar
     const ecoPct = Math.min(100, eco.monthly_carbon / eco.taiwan_avg * 100);
@@ -813,7 +989,7 @@ async function loadDashboard() {
 
 function renderBudgetBars(budgets, containerId) {
   const c = document.getElementById(containerId);
-  if (!budgets.length) { c.innerHTML = '<div class="text-sm text-on-surface-variant">No budgets set yet.</div>'; return; }
+  if (!budgets.length) { c.innerHTML = `<div class="text-sm text-on-surface-variant">${t('no_budgets')}</div>`; return; }
   const colors = ['#c0ceab','#9ecede','#ffb7b2','#e8d284','#becba8','#fcb4b0','#8dbccc','#dceac5'];
   c.innerHTML = budgets.map((b,i) => {
     const pct = Math.min(b.percentage, 100);
@@ -821,11 +997,11 @@ function renderBudgetBars(budgets, containerId) {
     return `<div class="flex flex-col gap-2">
       <div class="flex justify-between items-end mb-1">
         <span class="text-[15px] text-on-surface font-semibold">${esc(b.category)}</span>
-        <span class="font-label-lg text-[13px] text-on-surface-variant">${b.percentage > 100 ? '⚠️ Over' : '$' + fmt(b.monthly_limit - b.spent) + ' Left'}</span>
+        <span class="font-label-lg text-[13px] text-on-surface-variant">${b.percentage > 100 ? t('over_budget') : fmtMoney(b.monthly_limit - b.spent) + ' ' + t('left_budget')}</span>
       </div>
       <div class="h-6 w-full bg-surface-container rounded-full overflow-hidden shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)] relative">
         <div class="absolute top-0 left-0 h-full rounded-full flex items-center px-3 transition-all duration-500" style="width:${pct}%;background:${clr}">
-          <span class="font-label-lg text-[12px] text-[#121416] whitespace-nowrap">$${fmt(b.spent)} of $${fmt(b.monthly_limit)}</span>
+          <span class="font-label-lg text-[12px] text-[#121416] whitespace-nowrap">${fmtMoney(b.spent)} / ${fmtMoney(b.monthly_limit)}</span>
         </div>
       </div>
     </div>`;
@@ -849,7 +1025,7 @@ async function loadRecentTxs(month) {
   try {
     const exps = await api(`/api/expenses?month=${month}`);
     const c = document.getElementById('recent-txs');
-    if (!exps.length) { c.innerHTML='<div class="text-center py-8 text-on-surface-variant"><div class="text-3xl mb-2 opacity-40">📦</div>No transactions yet.<br>Tap + to add one!</div>'; return; }
+    if (!exps.length) { c.innerHTML=`<div class="text-center py-8 text-on-surface-variant"><div class="text-3xl mb-2 opacity-40">📦</div>${t('no_txns')}</div>`; return; }
     c.innerHTML = exps.slice(0,6).map(txCard).join('');
   } catch(_) {}
 }
@@ -866,7 +1042,7 @@ function txCard(e) {
       </div>
     </div>
     <div class="text-right shrink-0 ml-3">
-      <div class="font-headline-md text-[16px] text-on-surface">-$${fmt(e.amount)}</div>
+      <div class="font-headline-md text-[16px] text-on-surface">-${fmtMoney(e.amount)}</div>
       <div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>
     </div>
   </div>`;
@@ -906,19 +1082,53 @@ function renderTrendChart(byDay) {
   if (trendChart) { trendChart.data.labels=labels; trendChart.data.datasets[0].data=values; trendChart.update(); return; }
   trendChart = new Chart(document.getElementById('trendChart'), {
     type:'line',
-    data:{labels, datasets:[{label:'Daily $',data:values,borderColor:chartOpts.line,backgroundColor:chartOpts.lineBg,fill:true,tension:.4,pointRadius:1.5,pointHoverRadius:4,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10},color:chartOpts.text}},y:{beginAtZero:true,ticks:{callback:v=>'$'+v,font:{size:10},color:chartOpts.text},grid:{color:chartOpts.grid}}}}
+    data:{labels, datasets:[{label:'Daily',data:values,borderColor:chartOpts.line,backgroundColor:chartOpts.lineBg,fill:true,tension:.4,pointRadius:1.5,pointHoverRadius:4,borderWidth:2}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>` ${fmtMoney(c.raw)}`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10},color:chartOpts.text}},
+        y:{beginAtZero:true,ticks:{callback:v=>fmtMoney(v),font:{size:10},color:chartOpts.text},grid:{color:chartOpts.grid}}
+      }
+    }
   });
 }
 
 function renderCatChart(data) {
   const labels = Object.keys(data), values = Object.values(data);
   const colors = labels.map(l => CAT_COLORS[l] || '#6b7280');
-  if (catChart) { catChart.data.labels=labels; catChart.data.datasets[0].data=values; catChart.data.datasets[0].backgroundColor=colors; catChart.update(); return; }
+  const tot = values.reduce((a,b)=>a+b,0);
+  const genLabels = chart => {
+    const ds = chart.data.datasets[0];
+    const total = ds.data.reduce((a,b)=>a+b,0);
+    return chart.data.labels.map((label,i) => ({
+      text: `${label}  ${total>0?((ds.data[i]/total*100).toFixed(1)):0}%`,
+      fillStyle: ds.backgroundColor[i],
+      strokeStyle:'transparent', hidden:false, index:i
+    }));
+  };
+  const tooltipLabel = c => {
+    const total = c.dataset.data.reduce((a,b)=>a+b,0);
+    const pct = total>0?((c.raw/total*100).toFixed(1)):0;
+    return ` ${c.label}: ${fmtMoney(c.raw)} (${pct}%)`;
+  };
+  if (catChart) {
+    catChart.data.labels=labels; catChart.data.datasets[0].data=values;
+    catChart.data.datasets[0].backgroundColor=colors;
+    catChart.options.plugins.legend.labels.generateLabels = genLabels;
+    catChart.options.plugins.tooltip.callbacks.label = tooltipLabel;
+    catChart.update(); return;
+  }
   catChart = new Chart(document.getElementById('catChart'), {
     type:'doughnut',
-    data:{labels, datasets:[{data:values, backgroundColor:colors, borderWidth:0}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},color:'#d7c2c0',padding:8,boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.label}: $${fmt(c.raw)}`}}}}
+    data:{labels, datasets:[{data:values, backgroundColor:colors, borderWidth:0, hoverOffset:6}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{position:'right',labels:{font:{size:10},color:'#d7c2c0',padding:10,boxWidth:12,generateLabels:genLabels}},
+        tooltip:{callbacks:{label:tooltipLabel}}
+      }
+    }
   });
 }
 
@@ -966,8 +1176,8 @@ function renderEmotionChart(data) {
         </div>
       </div>
       <div class="text-right">
-        <div class="text-[14px] font-bold text-on-surface">$${fmt(v.total)}</div>
-        <div class="text-[11px] text-on-surface-variant">${v.count} txns</div>
+        <div class="text-[14px] font-bold text-on-surface">${fmtMoney(v.total)}</div>
+        <div class="text-[11px] text-on-surface-variant">${t('txn_count', v.count)}</div>
       </div>
     </div>`).join('');
 }
@@ -976,13 +1186,13 @@ async function generateReport() {
   const month = document.getElementById('ana-month').value || CUR_MONTH;
   const btn   = document.getElementById('gen-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Generating...';
+  btn.innerHTML = `<span class="spin"></span> ${t('report_gen')}`;
   try {
     const r = await api(`/api/summary/${month}?force=true`);
     document.getElementById('report-text').textContent = r.summary_text;
     document.getElementById('report-card').classList.remove('hidden');
-  } catch(_) { toast('Report failed', 'error'); }
-  finally { btn.disabled=false; btn.innerHTML='✨ AI Report'; }
+  } catch(_) { toast(t('report_failed'), 'error'); }
+  finally { btn.disabled=false; btn.innerHTML=t('btn_ai_report'); }
 }
 
 async function loadAnomalies() {
@@ -992,7 +1202,7 @@ async function loadAnomalies() {
     document.getElementById('anomaly-summary').textContent = r.summary || '';
     const list = r.anomalies || [];
     if (!list.length) {
-      document.getElementById('anomaly-list').innerHTML = '<div class="text-sm text-eco p-3 bg-eco/10 rounded-xl">✅ No anomalies detected. Spending looks normal!</div>';
+      document.getElementById('anomaly-list').innerHTML = `<div class="text-sm text-eco p-3 bg-eco/10 rounded-xl">${t('no_anomalies')}</div>`;
       return;
     }
     document.getElementById('anomaly-list').innerHTML = list.map(a => `
@@ -1003,7 +1213,7 @@ async function loadAnomalies() {
           <div class="text-[12px] text-on-surface-variant mt-0.5">${esc(a.message)}</div>
         </div>
       </div>`).join('');
-  } catch(_) { toast('Anomaly analysis failed', 'error'); }
+  } catch(_) { toast(t('anomaly_failed'), 'error'); }
 }
 
 function doExportCSV() {
@@ -1046,8 +1256,8 @@ async function doSearch() {
   try {
     const exps = await api(`/api/expenses/search?${p}`);
     const c    = document.getElementById('h-list');
-    document.getElementById('h-count').textContent = `${exps.length} transaction${exps.length!==1?'s':''}`;
-    if (!exps.length) { c.innerHTML='<div class="text-center py-8 text-on-surface-variant"><div class="text-3xl mb-2 opacity-40">🔍</div>No transactions found</div>'; return; }
+    document.getElementById('h-count').textContent = t('txn_count', exps.length);
+    if (!exps.length) { c.innerHTML=`<div class="text-center py-8 text-on-surface-variant"><div class="text-3xl mb-2 opacity-40">🔍</div>${t('no_results')}</div>`; return; }
     c.innerHTML = exps.map(txCardDeletable).join('');
   } catch(e) { console.error(e); }
 }
@@ -1066,7 +1276,7 @@ function txCardDeletable(e) {
     </div>
     <div class="flex items-center gap-3 shrink-0 ml-2">
       <div class="text-right">
-        <div class="font-headline-md text-[15px] text-on-surface">-$${fmt(e.amount)}</div>
+        <div class="font-headline-md text-[15px] text-on-surface">-${fmtMoney(e.amount)}</div>
         <div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>
       </div>
       <button onclick="deleteTx(${e.id})" class="text-error hover:bg-error/10 p-2 rounded-full transition-colors" title="Delete">
@@ -1112,10 +1322,10 @@ async function loadEcoScreen() {
 
     if (eco.next_rank_at) {
       document.getElementById('rank-fill').style.width = Math.min(100, eco.eco_score / eco.next_rank_at * 100) + '%';
-      document.getElementById('rank-progress-lbl').textContent = `${eco.eco_score} / ${eco.next_rank_at} pts to next rank`;
+      document.getElementById('rank-progress-lbl').textContent = `${eco.eco_score} / ${eco.next_rank_at} — ${t('pts_to_next', eco.next_rank_at - eco.eco_score)}`;
     } else {
       document.getElementById('rank-fill').style.width = '100%';
-      document.getElementById('rank-progress-lbl').textContent = 'Max rank achieved! 🌍';
+      document.getElementById('rank-progress-lbl').textContent = t('max_rank_eco');
     }
 
     loadBudgetManager();
@@ -1173,7 +1383,7 @@ async function loadBudgetManager() {
   const list    = document.getElementById('budget-mgr-list');
 
   if (!budgets.length) {
-    list.innerHTML = '<div class="text-sm text-on-surface-variant text-center py-4">No budgets set. Add one above!</div>';
+    list.innerHTML = `<div class="text-sm text-on-surface-variant text-center py-4">${t('no_budgets_add')}</div>`;
     return;
   }
 
@@ -1186,12 +1396,12 @@ async function loadBudgetManager() {
       <div class="flex-1 min-w-0">
         <div class="flex justify-between items-center mb-1">
           <span class="text-[14px] font-semibold text-on-surface truncate">${esc(b.category)}</span>
-          <span class="text-[12px] text-on-surface-variant shrink-0 ml-2">$${fmt(b.spent)} / $${fmt(b.monthly_limit)}</span>
+          <span class="text-[12px] text-on-surface-variant shrink-0 ml-2">${fmtMoney(b.spent)} / ${fmtMoney(b.monthly_limit)}</span>
         </div>
         <div class="h-2 bg-surface-container-lowest rounded-full overflow-hidden">
           <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${clr}"></div>
         </div>
-        <div class="text-[11px] mt-1" style="color:${clr}">${b.percentage > 100 ? '⚠️ Over budget' : b.percentage.toFixed(0) + '% used'}</div>
+        <div class="text-[11px] mt-1" style="color:${clr}">${b.percentage > 100 ? t('over_budget') : b.percentage.toFixed(0) + '% used'}</div>
       </div>
       <button onclick="deleteBudget(${b.id})" class="text-error hover:bg-error/10 p-2 rounded-full transition-colors shrink-0" title="Remove">
         <span class="material-symbols-outlined text-[16px]">delete</span>
@@ -1284,7 +1494,7 @@ async function doParse() {
     updateCarbonEst();
     toast('Parsed!', 'success');
   } catch(_) { toast('Parse failed', 'error'); }
-  finally { btn.disabled=false; btn.innerHTML='✨ Parse with AI'; }
+  finally { btn.disabled=false; btn.innerHTML=t('sheet_parse'); }
 }
 
 async function saveTransaction() {
@@ -1361,17 +1571,13 @@ async function runAiAnalysis() {
   document.getElementById('ai-analysis-loading').style.display = 'block';
   btn.disabled = true;
 
-  const loadingMsgs = [
-    'AI 正在分析你的消費資料...',
-    '計算各類別佔比中...',
-    '評估碳足跡影響...',
-    '生成個人化建議...',
-  ];
+  const loadingKeys = ['ai_loading_1','ai_loading_2','ai_loading_3','ai_loading_4'];
   let msgIdx = 0;
   const msgEl   = document.getElementById('ai-loading-msg');
+  msgEl.textContent = t(loadingKeys[0]);
   const msgTimer = setInterval(() => {
-    msgIdx = (msgIdx + 1) % loadingMsgs.length;
-    msgEl.textContent = loadingMsgs[msgIdx];
+    msgIdx = (msgIdx + 1) % loadingKeys.length;
+    msgEl.textContent = t(loadingKeys[msgIdx]);
   }, 1200);
 
   try {
@@ -1379,7 +1585,7 @@ async function runAiAnalysis() {
     clearInterval(msgTimer);
 
     if (r.error) {
-      toast('這個月還沒有消費記錄', 'warn');
+      toast(t('ai_no_txns'), 'warn');
       document.getElementById('ai-analysis-idle').style.display   = 'block';
       document.getElementById('ai-analysis-loading').style.display = 'none';
       return;
@@ -1396,22 +1602,22 @@ async function runAiAnalysis() {
     // Quick stats grid (4 tiles)
     const savingsColor = (st.savings ?? 0) >= 0 ? '#dceac5' : '#ffb4ab';
     document.getElementById('ai-stats-grid').innerHTML = [
-      { label: 'TOTAL SPENT',  val: `$${Number(st.total).toLocaleString()}`,       color: '#ffdddb' },
-      { label: 'TRANSACTIONS', val: st.count,                                       color: '#9ecede' },
-      { label: 'AVG / DAY',    val: `$${Number(st.avg_daily).toLocaleString()}`,    color: '#dceac5' },
-      { label: st.savings != null ? 'SAVINGS' : 'CO₂e',
-        val:   st.savings != null ? `$${Number(st.savings).toLocaleString()}` : `${st.total_carbon}kg`,
+      { label: t('lbl_total_spent'),  val: fmtMoney(st.total),   color: '#ffdddb' },
+      { label: t('lbl_transactions'), val: st.count,              color: '#9ecede' },
+      { label: t('lbl_avg_day'),      val: fmtMoney(st.avg_daily),color: '#dceac5' },
+      { label: st.savings != null ? t('lbl_savings') : 'CO₂e',
+        val:   st.savings != null ? fmtMoney(st.savings) : `${st.total_carbon}kg`,
         color: st.savings != null ? savingsColor : '#4ade80' },
-    ].map(t => `
+    ].map(tile => `
       <div class="bg-surface-container-high rounded-xl p-3 text-center border border-surface-variant">
-        <div class="font-headline-md text-[16px] font-bold" style="color:${t.color}">${esc(String(t.val))}</div>
-        <div class="font-label-lg text-[9px] text-on-surface-variant mt-1">${t.label}</div>
+        <div class="font-headline-md text-[16px] font-bold" style="color:${tile.color}">${esc(String(tile.val))}</div>
+        <div class="font-label-lg text-[9px] text-on-surface-variant mt-1">${tile.label}</div>
       </div>`).join('');
 
     // Category breakdown bars (top 5)
     const topCats = Object.entries(st.by_category).slice(0, 5);
     document.getElementById('ai-cat-breakdown').innerHTML =
-      `<div class="text-[11px] font-bold text-on-surface-variant uppercase mb-1">Top Categories</div>` +
+      `<div class="text-[11px] font-bold text-on-surface-variant uppercase mb-1">${t('ai_top_cats')}</div>` +
       topCats.map(([cat, v]) => {
         const clr = CAT_COLORS[cat] || '#6b7280';
         const icon = CATS[cat] || '📦';
@@ -1435,7 +1641,7 @@ async function runAiAnalysis() {
 
   } catch (err) {
     clearInterval(msgTimer);
-    toast('AI 分析失敗，請稍後再試', 'error');
+    toast(t('ai_error'), 'error');
     document.getElementById('ai-analysis-loading').style.display = 'none';
     document.getElementById('ai-analysis-idle').style.display    = 'block';
   } finally {
@@ -1469,7 +1675,7 @@ async function openCompModal() {
     document.getElementById('comp-content').style.display = 'block';
   } catch(e) {
     document.getElementById('comp-loading').style.display = 'none';
-    toast('分析載入失敗', 'error');
+    toast(t('comp_fail'), 'error');
     closeCompModal();
   }
 }
@@ -1484,9 +1690,9 @@ function renderComprehensive(d) {
 
   // ── Summary cards (3-col) ──────────────────────────────────────────────
   const summaryCards = [
-    { label: '總支出', val: `$${fmt(d.total_expense)}`, color: '#ffb4ab' },
-    { label: '總收入', val: d.monthly_income ? `$${fmt(d.total_income)}` : '未設定', color: '#9ecede' },
-    { label: '淨額', val: d.monthly_income ? (d.net >= 0 ? '+' : '') + `$${fmt(d.net)}` : '—', color: netColor },
+    { label: t('comp_lbl_expense'), val: fmtMoney(d.total_expense), color: '#ffb4ab' },
+    { label: t('comp_lbl_income'),  val: d.monthly_income ? fmtMoney(d.total_income) : t('comp_not_set'), color: '#9ecede' },
+    { label: t('comp_lbl_net'),     val: d.monthly_income ? (d.net >= 0 ? '+' : '') + fmtMoney(d.net) : '—', color: netColor },
   ];
   document.getElementById('comp-summary-cards').innerHTML = summaryCards.map(c => `
     <div class="bg-surface-container-high rounded-[16px] p-4 border border-surface-variant text-center">
@@ -1495,13 +1701,13 @@ function renderComprehensive(d) {
     </div>`).join('');
 
   // ── Detail cards (2-col) ──────────────────────────────────────────────
-  const hiMonth  = d.highest_month ? `${d.highest_month} ($${fmt(d.highest_amount)})` : '—';
-  const loMonth  = d.lowest_month  ? `${d.lowest_month} ($${fmt(d.lowest_amount)})`  : '—';
+  const hiMonth  = d.highest_month ? `${d.highest_month} (${fmtMoney(d.highest_amount)})` : '—';
+  const loMonth  = d.lowest_month  ? `${d.lowest_month} (${fmtMoney(d.lowest_amount)})`  : '—';
   const detailCards = [
-    { label: '平均每月花費', val: `$${fmt(d.avg_monthly)}`, icon: '📅' },
-    { label: '平均每日花費', val: `$${fmt(d.avg_daily)}`,   icon: '📆' },
-    { label: '最高消費月份', val: hiMonth, icon: '📈' },
-    { label: '最低消費月份', val: loMonth, icon: '📉' },
+    { label: t('comp_avg_monthly'), val: fmtMoney(d.avg_monthly), icon: '📅' },
+    { label: t('comp_avg_daily'),   val: fmtMoney(d.avg_daily),   icon: '📆' },
+    { label: t('comp_hi_month'),    val: hiMonth,                  icon: '📈' },
+    { label: t('comp_lo_month'),    val: loMonth,                  icon: '📉' },
   ];
   document.getElementById('comp-detail-cards').innerHTML = detailCards.map(c => `
     <div class="bg-surface-container-high rounded-[16px] p-4 border border-surface-variant">
@@ -1521,21 +1727,21 @@ function renderComprehensive(d) {
     data: {
       labels: months,
       datasets: [
-        { label: '支出', data: expenses, backgroundColor: 'rgba(255,180,176,.7)', borderRadius: 6, order: 1 },
-        ...(d.monthly_income ? [{ label: '收入', data: incomes, backgroundColor: 'rgba(158,206,222,.35)', borderRadius: 6, order: 2 }] : []),
+        { label: t('comp_expense_label'), data: expenses, backgroundColor: 'rgba(255,180,176,.7)', borderRadius: 6, order: 1 },
+        ...(d.monthly_income ? [{ label: t('comp_income_label'), data: incomes, backgroundColor: 'rgba(158,206,222,.35)', borderRadius: 6, order: 2 }] : []),
       ],
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { font: { size: 11 }, color: '#d7c2c0', boxWidth: 10 } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: $${fmt(c.raw)}` } } },
+      plugins: { legend: { labels: { font: { size: 11 }, color: '#d7c2c0', boxWidth: 10 } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmtMoney(c.raw)}` } } },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9f8c8b' } },
-        y: { beginAtZero: true, ticks: { callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v), font: { size: 10 }, color: '#9f8c8b' }, grid: { color: 'rgba(51,53,55,.6)' } },
+        y: { beginAtZero: true, ticks: { callback: v => fmtMoney(v >= 1000 ? v : v), font: { size: 10 }, color: '#9f8c8b' }, grid: { color: 'rgba(51,53,55,.6)' } },
       },
     },
   });
 
-  // ── Category doughnut ────────────────────────────────────────────────
+  // ── Category doughnut (with % in tooltip) ────────────────────────────
   const catEntries = Object.entries(d.by_category).slice(0, 10);
   const catLabels  = catEntries.map(([c]) => c);
   const catValues  = catEntries.map(([, v]) => v.amount);
@@ -1544,8 +1750,8 @@ function renderComprehensive(d) {
   if (compCatChart) { compCatChart.destroy(); compCatChart = null; }
   compCatChart = new Chart(catCtx, {
     type: 'doughnut',
-    data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: catColors, borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${d.by_category[c.label]?.pct ?? 0}%` } } } },
+    data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: catColors, borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${fmtMoney(c.raw)} (${d.by_category[c.label]?.pct ?? 0}%)` } } } },
   });
 
   // Category list
@@ -1563,7 +1769,7 @@ function renderComprehensive(d) {
           <div class="h-full rounded-full" style="width:${v.pct}%;background:${clr}"></div>
         </div>
       </div>
-      <span class="text-[11px] text-on-surface-variant shrink-0 ml-1">$${fmt(v.amount)}</span>
+      <span class="text-[11px] text-on-surface-variant shrink-0 ml-1">${fmtMoney(v.amount)}</span>
     </div>`;
   }).join('');
 
@@ -1575,22 +1781,22 @@ function renderComprehensive(d) {
       const netSign = v.net >= 0 ? '+' : '';
       return `<div class="flex items-center justify-between px-4 py-3 bg-surface-container-high rounded-xl border border-surface-variant text-[13px]">
         <span class="font-bold text-on-surface w-20 shrink-0">${m}</span>
-        <span class="text-[#ffb4ab]">-$${fmt(v.expense)}</span>
-        ${d.monthly_income ? `<span class="text-secondary">+$${fmt(v.income)}</span>` : ''}
-        ${d.monthly_income ? `<span class="font-bold" style="color:${netClr}">${netSign}$${fmt(Math.abs(v.net))}</span>` : ''}
-        <span class="text-on-surface-variant">${v.count} 筆</span>
+        <span class="text-[#ffb4ab]">-${fmtMoney(v.expense)}</span>
+        ${d.monthly_income ? `<span class="text-secondary">+${fmtMoney(v.income)}</span>` : ''}
+        ${d.monthly_income ? `<span class="font-bold" style="color:${netClr}">${netSign}${fmtMoney(Math.abs(v.net))}</span>` : ''}
+        <span class="text-on-surface-variant">${t('txn_count', v.count)}</span>
       </div>`;
     }).join('');
 }
 
 // ── Seed / Demo ───────────────────────────────────────────────────────────────
 async function loadSeed() {
-  if (!confirm('Load 20 demo transactions for June 2026?')) return;
+  if (!confirm(t('confirm_demo'))) return;
   try {
     const r = await api('/api/seed');
-    toast(`Demo loaded — ${r.expenses} transactions`, 'success');
+    toast(t('seed_loaded', r.expenses), 'success');
     loadDashboard();
-  } catch(_) { toast('Seed failed', 'error'); }
+  } catch(_) { toast(t('seed_failed'), 'error'); }
 }
 </script>
 </body>
