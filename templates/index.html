@@ -80,6 +80,21 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 #comp-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.72)}
 #comp-modal-panel{position:relative;margin:auto;width:100%;max-width:760px;max-height:92vh;background:#1a1c1e;border-radius:24px;overflow-y:auto;padding:1.5rem;border:1px solid #333537}
 @media(max-width:640px){ #comp-modal-panel{margin:auto 0 0;border-radius:24px 24px 0 0;max-height:96vh}}
+/* ── Dynamic Earth State Animations ─────────────────────────────────── */
+@keyframes earthThriving{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.06)}}
+@keyframes earthNeutral{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes earthStressed{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-4px) rotate(-1.8deg)}50%{transform:translateY(-7px) rotate(.8deg)}75%{transform:translateY(-3px) rotate(-1.2deg)}}
+@keyframes earthCritical{0%,100%{transform:translateY(0);opacity:1}50%{transform:translateY(-3px);opacity:.6}}
+@keyframes glowThriving{0%,100%{opacity:.55}50%{opacity:1}}
+.earth-thriving{animation:earthThriving 3s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(74,222,128,.75))}
+.earth-neutral{animation:earthNeutral 5s ease-in-out infinite;filter:drop-shadow(0 0 10px rgba(251,191,36,.5))}
+.earth-stressed{animation:earthStressed 2.5s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(251,146,60,.65))}
+.earth-critical{animation:earthCritical 3s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(148,163,178,.3)) saturate(.35)}
+.glow-thriving{animation:glowThriving 3s ease-in-out infinite}
+/* Earth tooltip */
+.earth-tooltip-wrap{position:relative;display:inline-block}
+.earth-tooltip-box{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(8px);min-width:230px;max-width:290px;background:rgba(20,22,24,.97);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:14px 16px;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:500;backdrop-filter:blur(16px);text-align:left;white-space:normal;line-height:1.45}
+.earth-tooltip-wrap:hover .earth-tooltip-box,.earth-tooltip-wrap.tip-open .earth-tooltip-box{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body class="bg-background text-on-surface font-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary">
@@ -157,7 +172,10 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <!-- Earth Companion -->
       <div class="relative flex flex-col items-center shrink-0">
         <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full transition-all duration-500" id="earth-glow" style="background:radial-gradient(circle,rgba(74,222,128,.2),transparent 70%)"></div>
-        <div class="earth-float text-7xl relative z-10" id="earth-emoji">🌍</div>
+        <div class="earth-tooltip-wrap">
+          <div class="earth-neutral text-7xl relative z-10 cursor-help" id="earth-emoji">🌍</div>
+          <div class="earth-tooltip-box" id="earth-tooltip"></div>
+        </div>
         <p class="text-sm font-medium mt-3 text-on-surface-variant transition-colors" id="earth-msg">Loading...</p>
       </div>
 
@@ -420,7 +438,10 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
   <!-- Earth Large -->
   <div class="text-center py-8 relative">
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] w-48 h-48 rounded-full transition-all duration-500" id="eco-earth-glow" style="background:radial-gradient(circle,rgba(74,222,128,.2),transparent 70%)"></div>
-    <div class="earth-float text-8xl relative z-10" id="eco-earth-emoji">🌍</div>
+    <div class="earth-tooltip-wrap">
+      <div class="earth-neutral text-8xl relative z-10 cursor-help" id="eco-earth-emoji">🌍</div>
+      <div class="earth-tooltip-box" id="eco-earth-tooltip"></div>
+    </div>
     <p class="text-sm font-medium mt-4 text-on-surface-variant" id="eco-earth-msg">Loading...</p>
   </div>
   <!-- Carbon Time Periods -->
@@ -725,6 +746,16 @@ const I18N = {
     no_results:'No transactions found',comp_fail:'Analysis load failed',
     lbl_total_spent:'TOTAL SPENT',lbl_transactions:'TRANSACTIONS',lbl_avg_day:'AVG / DAY',lbl_savings:'SAVINGS',
     comp_expense_label:'Expense',comp_income_label:'Income',
+    earth_thriving_name:'🌍 Thriving',earth_neutral_name:'🌎 Neutral',earth_stressed_name:'🌏 Stressed',earth_critical_name:'🌫️ Critical',
+    earth_thriving_msg:'Your planet is thriving! Keep it up!',
+    earth_neutral_msg:'Doing okay. Small changes help!',
+    earth_stressed_msg:'Your planet needs a break. Try greener choices!',
+    earth_critical_msg:'Your planet is struggling. Every eco-choice matters!',
+    earth_thriving_tip:'Excellent eco-habits! Low-carbon spending and green choices are paying off. Keep choosing public transit and plant-based meals.',
+    earth_neutral_tip:'Good progress! Consider reducing high-emission purchases like flights or meat to level up.',
+    earth_stressed_tip:'High-carbon spending detected. Try replacing car trips with public transit and cut down on meat and flights.',
+    earth_critical_tip:'Your carbon footprint is very high. Urgently reduce flights, car usage, and other high-emission purchases.',
+    earth_carbon_lbl:'Monthly CO₂e',earth_streak_lbl:'Tracking streak',earth_high_carbon:'High-carbon',earth_low_carbon:'Low-carbon',
   },
   zh:{
     nav_dashboard:'儀表板',nav_analytics:'分析',nav_history:'歷史記錄',
@@ -776,6 +807,16 @@ const I18N = {
     no_results:'找不到交易記錄',comp_fail:'分析載入失敗',
     lbl_total_spent:'總支出',lbl_transactions:'筆數',lbl_avg_day:'日均花費',lbl_savings:'結餘',
     comp_expense_label:'支出',comp_income_label:'收入',
+    earth_thriving_name:'🌍 蓬勃健康',earth_neutral_name:'🌎 普通',earth_stressed_name:'🌏 有壓力',earth_critical_name:'🌫️ 危機',
+    earth_thriving_msg:'地球很健康！繼續保持！',
+    earth_neutral_msg:'還不錯，小改變就能更好！',
+    earth_stressed_msg:'地球需要喘息，試試更環保的選擇！',
+    earth_critical_msg:'地球正在受苦，每個環保行動都很重要！',
+    earth_thriving_tip:'環保習慣超棒！低碳消費正在發揮效果，持續選擇大眾運輸和植物性飲食吧。',
+    earth_neutral_tip:'不錯的進展！試試搭大眾運輸或多吃蔬食，就能達到「蓬勃健康」狀態。',
+    earth_stressed_tip:'偵測到高碳消費。請減少搭機、以大眾運輸代替開車，並降低肉類攝取。',
+    earth_critical_tip:'碳足跡非常高！請緊急減少搭機、車輛使用及高排放消費行為。',
+    earth_carbon_lbl:'本月碳排放',earth_streak_lbl:'連續記帳天數',earth_high_carbon:'高碳消費',earth_low_carbon:'低碳消費',
   }
 };
 function t(key,...args) {
@@ -797,6 +838,7 @@ function applyLang() {
   if (cur) document.getElementById('page-title').textContent = TITLES[cur] || '';
   document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  if (window._lastEco) updateEarth(window._lastEco);
   const ait = document.getElementById('ai-idle-text');
   if (ait) ait.innerHTML = t('ai_idle');
 }
@@ -1011,14 +1053,61 @@ function renderBudgetBars(budgets, containerId) {
 function updateEarth(eco) {
   const emojis = {thriving:'🌍',neutral:'🌏',stressed:'🌎',critical:'🌫️'};
   const glows  = {
-    thriving:'radial-gradient(circle,rgba(74,222,128,.2),transparent 70%)',
-    neutral: 'radial-gradient(circle,rgba(251,191,36,.18),transparent 70%)',
-    stressed:'radial-gradient(circle,rgba(251,146,60,.18),transparent 70%)',
+    thriving:'radial-gradient(circle,rgba(74,222,128,.28),transparent 70%)',
+    neutral :'radial-gradient(circle,rgba(251,191,36,.2),transparent 70%)',
+    stressed:'radial-gradient(circle,rgba(251,146,60,.22),transparent 70%)',
     critical:'radial-gradient(circle,rgba(148,163,178,.15),transparent 70%)'
   };
-  ['earth-emoji','eco-earth-emoji'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=emojis[eco.earth_state]||'🌍'; });
-  ['earth-glow','eco-earth-glow'].forEach(id  => { const el=document.getElementById(id); if(el) el.style.background=glows[eco.earth_state]||glows.thriving; });
-  ['earth-msg','eco-earth-msg'].forEach(id    => { const el=document.getElementById(id); if(el){ el.textContent=eco.earth_message; el.style.color=eco.earth_color; } });
+  window._lastEco = eco; // cache for instant language-switch re-render
+  const stateClasses = ['earth-float','earth-thriving','earth-neutral','earth-stressed','earth-critical'];
+  const stateColors  = {thriving:'#4ade80',neutral:'#fbbf24',stressed:'#fb923c',critical:'#94a3b8'};
+  const state = eco.earth_state || 'neutral';
+  const color = eco.earth_color || stateColors[state] || '#fbbf24';
+
+  // Swap emoji + animation class
+  ['earth-emoji','eco-earth-emoji'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = emojis[state] || '🌍';
+    stateClasses.forEach(c => el.classList.remove(c));
+    el.classList.add('earth-' + state);
+  });
+
+  // Glow background + pulse for thriving
+  ['earth-glow','eco-earth-glow'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background = glows[state] || glows.neutral;
+    if (state === 'thriving') el.classList.add('glow-thriving');
+    else el.classList.remove('glow-thriving');
+  });
+
+  // Status message (i18n)
+  ['earth-msg','eco-earth-msg'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = t('earth_' + state + '_msg');
+    el.style.color = color;
+  });
+
+  // Build tooltip HTML
+  const highPct = eco.high_carbon_ratio != null ? Math.round(eco.high_carbon_ratio * 100) : null;
+  const lowPct  = eco.low_carbon_ratio  != null ? Math.round(eco.low_carbon_ratio  * 100) : null;
+  const rows = [
+    `<div style="font-weight:700;font-size:14px;margin-bottom:8px;color:${color}">${t('earth_'+state+'_name')}</div>`,
+    `<div style="font-size:11px;color:#a0aec0;margin-bottom:10px;line-height:1.5">${t('earth_'+state+'_tip')}</div>`,
+    `<div style="display:flex;flex-direction:column;gap:5px;font-size:11px">`,
+    `<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:#718096">${t('earth_carbon_lbl')}</span><span style="font-weight:600;color:${color}">${(eco.monthly_carbon||0).toFixed(1)} kg</span></div>`,
+    highPct!=null?`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:#718096">${t('earth_high_carbon')}</span><span style="font-weight:600;color:#f87171">${highPct}%</span></div>`:'',
+    lowPct!=null ?`<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:#718096">${t('earth_low_carbon')}</span><span style="font-weight:600;color:#4ade80">${lowPct}%</span></div>`:'',
+    `<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:#718096">${t('earth_streak_lbl')}</span><span style="font-weight:600;color:#fb923c">🔥 ${eco.streak||0}</span></div>`,
+    `</div>`,
+  ].join('');
+
+  ['earth-tooltip','eco-earth-tooltip'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = rows;
+  });
 }
 
 async function loadRecentTxs(month) {

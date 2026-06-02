@@ -89,14 +89,33 @@ def calculate_carbon(amount, category):
     return round(amount * info["factor"], 3)
 
 
-def get_earth_state(monthly_carbon):
-    if monthly_carbon < 300:
+HIGH_CARBON_CATS = {"Flight", "Car & Fuel", "Meat & Dairy", "Seafood", "Gas", "Taxi & Rideshare", "Furniture & Home", "Electronics", "Fashion"}
+LOW_CARBON_CATS  = {"Public Transport", "Groceries", "Books & Stationery", "Streaming & Software", "Education", "Water", "Insurance"}
+
+
+def get_earth_state(monthly_carbon, high_carbon_ratio=0.0, low_carbon_ratio=0.0, streak=0):
+    # Carbon component (dominant, 0–80 pts)
+    if monthly_carbon < 200:   c_pts = 80
+    elif monthly_carbon < 400: c_pts = 65
+    elif monthly_carbon < 600: c_pts = 45
+    elif monthly_carbon < 900: c_pts = 20
+    else:                      c_pts = 5
+
+    # Category mix: green choices boost, high-emission choices penalise (−15 to +15)
+    ratio_pts = (low_carbon_ratio - high_carbon_ratio) * 15
+
+    # Streak: consistent tracking earns up to 5 pts
+    streak_pts = min(streak / 10.0 * 5, 5.0)
+
+    composite = max(0.0, min(100.0, c_pts + ratio_pts + streak_pts))
+
+    if composite >= 70:
         return {"state": "thriving", "label": "Thriving", "color": "#4ade80",
                 "message": "Your planet is thriving! Keep it up!"}
-    elif monthly_carbon < 600:
+    elif composite >= 45:
         return {"state": "neutral", "label": "Neutral", "color": "#fbbf24",
                 "message": "Your planet is doing okay. Small changes help!"}
-    elif monthly_carbon < 900:
+    elif composite >= 20:
         return {"state": "stressed", "label": "Stressed", "color": "#fb923c",
                 "message": "Your planet needs a break. Try greener choices!"}
     else:
@@ -601,6 +620,13 @@ def eco_score():
             score -= 10
     score = max(score, 0)
 
+    # Spending ratios for composite earth health
+    total_amount      = sum(ex.amount or 0.0 for ex in expenses)
+    high_carbon_spend = sum(ex.amount or 0.0 for ex in expenses if ex.category in HIGH_CARBON_CATS)
+    low_carbon_spend  = sum(ex.amount or 0.0 for ex in expenses if ex.category in LOW_CARBON_CATS)
+    high_carbon_ratio = high_carbon_spend / total_amount if total_amount > 0 else 0.0
+    low_carbon_ratio  = low_carbon_spend  / total_amount if total_amount > 0 else 0.0
+
     streak     = 0
     check_date = date.today()
     if not Expense.query.filter(Expense.date == check_date).first():
@@ -613,21 +639,23 @@ def eco_score():
         else:
             break
 
-    earth = get_earth_state(monthly_carbon)
+    earth = get_earth_state(monthly_carbon, high_carbon_ratio, low_carbon_ratio, streak)
     rank  = get_eco_rank(score)
 
     return jsonify({
-        "eco_score":      score,
-        "rank":           rank["rank"],
-        "rank_emoji":     rank["emoji"],
-        "next_rank_at":   rank["next_at"],
-        "streak":         streak,
-        "monthly_carbon": round(monthly_carbon, 2),
-        "taiwan_avg":     750,
-        "earth_state":    earth["state"],
-        "earth_label":    earth["label"],
-        "earth_color":    earth["color"],
-        "earth_message":  earth["message"],
+        "eco_score":         score,
+        "rank":              rank["rank"],
+        "rank_emoji":        rank["emoji"],
+        "next_rank_at":      rank["next_at"],
+        "streak":            streak,
+        "monthly_carbon":    round(monthly_carbon, 2),
+        "taiwan_avg":        750,
+        "earth_state":       earth["state"],
+        "earth_label":       earth["label"],
+        "earth_color":       earth["color"],
+        "earth_message":     earth["message"],
+        "high_carbon_ratio": round(high_carbon_ratio, 3),
+        "low_carbon_ratio":  round(low_carbon_ratio, 3),
     })
 
 
