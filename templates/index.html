@@ -1188,7 +1188,7 @@ async function generateReport() {
   btn.disabled = true;
   btn.innerHTML = `<span class="spin"></span> ${t('report_gen')}`;
   try {
-    const r = await api(`/api/summary/${month}?force=true`);
+    const r = await api(`/api/summary/${month}?force=true&lang=${currentLang}`);
     document.getElementById('report-text').textContent = r.summary_text;
     document.getElementById('report-card').classList.remove('hidden');
   } catch(_) { toast(t('report_failed'), 'error'); }
@@ -1198,7 +1198,7 @@ async function generateReport() {
 async function loadAnomalies() {
   document.getElementById('anomaly-list').innerHTML = '<div class="text-sm text-on-surface-variant"><span class="spin"></span> Analysing...</div>';
   try {
-    const r = await api('/api/anomalies');
+    const r = await api(`/api/anomalies?lang=${currentLang}`);
     document.getElementById('anomaly-summary').textContent = r.summary || '';
     const list = r.anomalies || [];
     if (!list.length) {
@@ -1581,7 +1581,7 @@ async function runAiAnalysis() {
   }, 1200);
 
   try {
-    const r = await api(`/api/ai-analysis?month=${month}`);
+    const r = await api(`/api/ai-analysis?month=${month}&lang=${currentLang}`);
     clearInterval(msgTimer);
 
     if (r.error) {

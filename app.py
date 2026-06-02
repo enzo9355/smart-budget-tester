@@ -192,13 +192,19 @@ def _rule_based_parse(text, today_str):
     return result
 
 
-def generate_monthly_summary(month, stats):
+def generate_monthly_summary(month, stats, lang='en'):
     """Generate AI monthly summary using Claude API."""
     client = get_anthropic()
     if not client:
-        return _rule_based_summary(month, stats)
+        return _rule_based_summary(month, stats, lang)
 
-    prompt = f"""You are a friendly personal finance assistant with an eco-focus.
+    lang_instruction = (
+        "請以繁體中文回覆。" if lang == 'zh'
+        else "Respond in English."
+    )
+
+    prompt = f"""{lang_instruction}
+You are a friendly personal finance assistant with an eco-focus.
 Write a concise 3-4 sentence monthly spending summary for {month}.
 
 Data:
@@ -219,14 +225,21 @@ Be encouraging, mention eco impact, and suggest one actionable improvement. Keep
         )
         return msg.content[0].text.strip()
     except Exception:
-        return _rule_based_summary(month, stats)
+        return _rule_based_summary(month, stats, lang)
 
 
-def _rule_based_summary(month, stats):
+def _rule_based_summary(month, stats, lang='en'):
     top = stats.get("top_category", "Other")
     total = stats.get("total", 0)
     carbon = stats.get("total_carbon", 0)
     count = stats.get("count", 0)
+    if lang == 'zh':
+        eco_note = ("本月碳足跡控制得很好，繼續保持！🌿"
+                    if carbon < 300 else
+                    "考慮用更環保的方式取代高碳消費。🌱")
+        return (f"{month} 共記錄 {count} 筆消費，合計 TWD {total:.0f}。"
+                f"最高消費類別為「{top}」。"
+                f"碳足跡為 {carbon:.1f} kg CO₂e。{eco_note}")
     eco_note = ("Great job keeping your carbon footprint low this month! 🌿"
                 if carbon < 300 else
                 "Consider swapping some high-carbon choices for greener alternatives. 🌱")
@@ -236,13 +249,19 @@ def _rule_based_summary(month, stats):
             f"{eco_note}")
 
 
-def detect_anomalies_nlp(cur, prv):
+def detect_anomalies_nlp(cur, prv, lang='en'):
     """Detect spending anomalies using Claude API or rule-based fallback."""
     client = get_anthropic()
     if not client:
-        return _rule_based_anomalies(cur, prv)
+        return _rule_based_anomalies(cur, prv, lang)
 
-    prompt = f"""Analyze these monthly spending patterns and identify anomalies.
+    lang_instruction = (
+        "請以繁體中文回覆，所有 message 和 summary 欄位必須使用繁體中文。" if lang == 'zh'
+        else "Respond in English."
+    )
+
+    prompt = f"""{lang_instruction}
+Analyze these monthly spending patterns and identify anomalies.
 
 Current month: {json.dumps(cur, ensure_ascii=False)}
 Previous month: {json.dumps(prv, ensure_ascii=False)}
@@ -266,10 +285,10 @@ Focus on: categories with >50% increase, unusually large single transactions, ne
         raw = msg.content[0].text.strip().replace("```json", "").replace("```", "").strip()
         return json.loads(raw)
     except Exception:
-        return _rule_based_anomalies(cur, prv)
+        return _rule_based_anomalies(cur, prv, lang)
 
 
-def _rule_based_anomalies(cur, prv):
+def _rule_based_anomalies(cur, prv, lang='en'):
     anomalies = []
     cur_cat = cur.get("by_category", {})
     prv_cat = prv.get("by_category", {})
@@ -278,23 +297,33 @@ def _rule_based_anomalies(cur, prv):
         if prev_amt > 0:
             pct = (amount - prev_amt) / prev_amt * 100
             if pct > 100:
-                anomalies.append({"category": cat,
-                                   "message": f"Spending up {pct:.0f}% vs last month (TWD {amount:.0f} vs {prev_amt:.0f})",
+                msg = (f"消費比上月增加 {pct:.0f}%（TWD {amount:.0f} vs {prev_amt:.0f}）"
+                       if lang == 'zh' else
+                       f"Spending up {pct:.0f}% vs last month (TWD {amount:.0f} vs {prev_amt:.0f})")
+                anomalies.append({"category": cat, "message": msg,
                                    "severity": "high" if pct > 200 else "medium"})
             elif pct > 50:
-                anomalies.append({"category": cat,
-                                   "message": f"Spending up {pct:.0f}% vs last month",
-                                   "severity": "low"})
+                msg = (f"消費比上月增加 {pct:.0f}%"
+                       if lang == 'zh' else
+                       f"Spending up {pct:.0f}% vs last month")
+                anomalies.append({"category": cat, "message": msg, "severity": "low"})
         elif amount > 500:
-            anomalies.append({"category": cat,
-                               "message": f"New category this month: TWD {amount:.0f}",
-                               "severity": "low"})
+            msg = (f"本月新增類別：TWD {amount:.0f}"
+                   if lang == 'zh' else
+                   f"New category this month: TWD {amount:.0f}")
+            anomalies.append({"category": cat, "message": msg, "severity": "low"})
     if cur.get("max_single", 0) > 2000:
-        anomalies.append({"category": "Single Transaction",
-                           "message": f"Large single transaction: TWD {cur['max_single']:.0f}",
-                           "severity": "medium"})
-    summary = (f"Found {len(anomalies)} anomaly(ies) this month."
-               if anomalies else "Spending patterns look normal this month.")
+        msg = (f"單筆大額消費：TWD {cur['max_single']:.0f}"
+               if lang == 'zh' else
+               f"Large single transaction: TWD {cur['max_single']:.0f}")
+        anomalies.append({"category": "Single Transaction" if lang == 'en' else "單筆交易",
+                           "message": msg, "severity": "medium"})
+    if lang == 'zh':
+        summary = (f"本月發現 {len(anomalies)} 個消費異常。"
+                   if anomalies else "本月消費模式正常，未發現異常。")
+    else:
+        summary = (f"Found {len(anomalies)} anomaly(ies) this month."
+                   if anomalies else "Spending patterns look normal this month.")
     return {"anomalies": anomalies, "summary": summary}
 
 
@@ -657,6 +686,7 @@ def get_budgets():
 @app.route("/api/summary/<month>")
 def get_summary(month):
     force  = request.args.get("force", "false") == "true"
+    lang   = request.args.get("lang", "en")
     cached = (MonthlySummary.query
               .filter_by(year_month=month)
               .order_by(MonthlySummary.generated_at.desc())
@@ -667,7 +697,8 @@ def get_summary(month):
     s, e     = month_range(month)
     expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
     if not expenses:
-        return jsonify({"summary_text": "No expenses recorded for this month.", "year_month": month})
+        msg = "尚無本月消費記錄。" if lang == 'zh' else "No expenses recorded for this month."
+        return jsonify({"summary_text": msg, "year_month": month})
 
     by_category  = defaultdict(float)
     by_emotion   = defaultdict(list)
@@ -688,7 +719,7 @@ def get_summary(month):
         "total_carbon":  round(total_carbon, 2),
     }
 
-    text = generate_monthly_summary(month, stats)
+    text = generate_monthly_summary(month, stats, lang)
     row  = MonthlySummary(year_month=month, summary_text=text)
     db.session.add(row)
     db.session.commit()
@@ -832,6 +863,7 @@ def comprehensive_stats():
 def ai_analysis():
     """Generate a rich AI spending analysis for the dashboard."""
     month = request.args.get("month", date.today().strftime("%Y-%m"))
+    lang  = request.args.get("lang", "en")
     s, e  = month_range(month)
     expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
 
@@ -889,21 +921,38 @@ def ai_analysis():
     # ── Claude API call ───────────────────────────────────────────────────
     client = get_anthropic()
     if not client:
-        lines = [
-            f"This month you spent TWD {total:,.0f} across {len(expenses)} transactions.",
-            f"Your biggest spending area was {top_cat}, making up {top_pct}% of your budget.",
-        ]
-        if monthly_income:
-            savings = monthly_income - total
-            lines.append(
-                f"You {'saved' if savings >= 0 else 'overspent by'} TWD {abs(savings):,.0f} this month."
-            )
-        lines.append(f"Your carbon footprint was {total_carbon:.1f} kg CO\u2082e.")
-        neg = emotion_totals.get("negative", {}).get("total", 0)
-        if neg > total * 0.25:
-            lines.append("A notable share of spending happened when you felt stressed — mindful pauses before purchases can help.")
+        if lang == 'zh':
+            lines = [
+                f"本月共消費 TWD {total:,.0f}，共 {len(expenses)} 筆交易。",
+                f"最高消費類別為「{top_cat}」，占總支出 {top_pct}%。",
+            ]
+            if monthly_income:
+                savings = monthly_income - total
+                lines.append(f"本月{'結餘' if savings >= 0 else '超支'} TWD {abs(savings):,.0f}。")
+            lines.append(f"碳足跡為 {total_carbon:.1f} kg CO₂e。")
+            neg = emotion_totals.get("negative", {}).get("total", 0)
+            if neg > total * 0.25:
+                lines.append("有相當比例的消費發生在情緒低落時，購物前稍作停頓可能有所幫助。")
+        else:
+            lines = [
+                f"This month you spent TWD {total:,.0f} across {len(expenses)} transactions.",
+                f"Your biggest spending area was {top_cat}, making up {top_pct}% of your budget.",
+            ]
+            if monthly_income:
+                savings = monthly_income - total
+                lines.append(
+                    f"You {'saved' if savings >= 0 else 'overspent by'} TWD {abs(savings):,.0f} this month."
+                )
+            lines.append(f"Your carbon footprint was {total_carbon:.1f} kg CO₂e.")
+            neg = emotion_totals.get("negative", {}).get("total", 0)
+            if neg > total * 0.25:
+                lines.append("A notable share of spending happened when you felt stressed — mindful pauses before purchases can help.")
         return jsonify({"analysis": " ".join(lines), "stats": stats_payload, "ai_powered": False})
 
+    lang_instruction = (
+        "請以繁體中文撰寫分析報告。" if lang == 'zh'
+        else "Write the analysis in English."
+    )
     cat_lines = "\n".join(
         f"  - {cat}: TWD {v['amount']:,.0f} ({v['pct']}%)"
         for cat, v in list(cat_breakdown.items())[:8]
@@ -913,7 +962,8 @@ def ai_analysis():
         if monthly_income else "Income not set."
     )
 
-    prompt = f"""You are a warm, insightful personal finance coach with an eco-conscious perspective.
+    prompt = f"""{lang_instruction}
+You are a warm, insightful personal finance coach with an eco-conscious perspective.
 Analyse this user's spending data for {month} and write a concise, personalised report in 4-5 sentences.
 
 KEY METRICS:
@@ -973,7 +1023,8 @@ def anomalies():
             "categories":  list({ex.category for ex in exps}),
         }
 
-    return jsonify(detect_anomalies_nlp(month_data(cur_m), month_data(prv_m)))
+    lang = request.args.get("lang", "en")
+    return jsonify(detect_anomalies_nlp(month_data(cur_m), month_data(prv_m), lang))
 
 
 # ── CSV Export ───────────────────────────────────────────────────────────────
