@@ -352,6 +352,7 @@ class Expense(db.Model):
     __tablename__ = "expenses"
     id           = db.Column(db.Integer, primary_key=True)
     amount       = db.Column(db.Float,   nullable=False)
+    tx_type      = db.Column(db.String(10), nullable=False, default="expense")  # 'expense' | 'income'
     category     = db.Column(db.String(50), nullable=False, default="Other")
     description  = db.Column(db.Text)
     emotion      = db.Column(db.String(20), default="neutral")
@@ -365,6 +366,7 @@ class Expense(db.Model):
         return {
             "id":           self.id,
             "amount":       self.amount,
+            "tx_type":      self.tx_type or "expense",
             "category":     self.category,
             "description":  self.description,
             "emotion":      self.emotion,
@@ -469,17 +471,24 @@ def create_expense():
             datetime.strptime(data["date"], "%Y-%m-%d").date()
             if data.get("date") else date.today()
         )
-        ctx    = data.get("context_tag")
-        amount = float(data["amount"])
-        category = data.get("category", "Other")
+        ctx     = data.get("context_tag")
+        amount  = float(data["amount"])
+        category= data.get("category", "Other")
+        tx_type = data.get("tx_type", "expense")
+        if tx_type not in ("expense", "income"):
+            tx_type = "expense"
 
-        if data.get("carbon_kg") is not None and data["carbon_kg"] != "":
+        # Income records have no carbon footprint
+        if tx_type == "income":
+            carbon = 0.0
+        elif data.get("carbon_kg") is not None and data["carbon_kg"] != "":
             carbon = float(data["carbon_kg"])
         else:
             carbon = calculate_carbon(amount, category)
 
         expense = Expense(
             amount       = amount,
+            tx_type      = tx_type,
             category     = category,
             description  = data.get("description", ""),
             emotion      = data.get("emotion", "neutral"),
@@ -566,7 +575,11 @@ def carbon_estimate():
 def carbon_summary():
     month = request.args.get("month", date.today().strftime("%Y-%m"))
     s, e  = month_range(month)
-    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+    # Only count expense-type records for carbon
+    expenses = Expense.query.filter(
+        Expense.date >= s, Expense.date < e,
+        Expense.tx_type != "income"
+    ).all()
 
     today_iso  = date.today().isoformat()
     week_start = (date.today() - timedelta(days=date.today().weekday())).isoformat()
@@ -587,16 +600,32 @@ def carbon_summary():
         if ex.date.isoformat() >= week_start:
             total_week += c
 
+    # Previous month carbon for comparison
+    year, m = map(int, month.split("-"))
+    if m == 1:
+        prev_month = f"{year-1}-12"
+    else:
+        prev_month = f"{year}-{m-1:02d}"
+    ps, pe = month_range(prev_month)
+    prev_exps  = Expense.query.filter(
+        Expense.date >= ps, Expense.date < pe,
+        Expense.tx_type != "income"
+    ).all()
+    prev_total = round(sum(ex.carbon_kg or 0.0 for ex in prev_exps), 2)
+    carbon_delta = round(total_month - prev_total, 2)
+
     driving_km   = round(total_month / 0.21, 1) if total_month > 0 else 0
     trees_needed = round(total_month / (21 / 12), 1) if total_month > 0 else 0
 
     return jsonify({
-        "by_category":  dict(by_category),
-        "by_day":       dict(by_day),
-        "total_today":  round(total_today, 2),
-        "total_week":   round(total_week, 2),
-        "total_month":  round(total_month, 2),
-        "equivalences": {
+        "by_category":   dict(by_category),
+        "by_day":        dict(by_day),
+        "total_today":   round(total_today, 2),
+        "total_week":    round(total_week, 2),
+        "total_month":   round(total_month, 2),
+        "prev_month":    prev_total,
+        "carbon_delta":  carbon_delta,
+        "equivalences":  {
             "driving_km":   driving_km,
             "trees_needed": trees_needed,
         },
@@ -607,7 +636,11 @@ def carbon_summary():
 def eco_score():
     month = request.args.get("month", date.today().strftime("%Y-%m"))
     s, e  = month_range(month)
-    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+    # Only count expense records for eco scoring
+    expenses = Expense.query.filter(
+        Expense.date >= s, Expense.date < e,
+        Expense.tx_type != "income"
+    ).all()
 
     score          = 0
     monthly_carbon = 0.0
@@ -760,11 +793,15 @@ def get_summary(month):
 def monthly_stats():
     month = request.args.get("month", date.today().strftime("%Y-%m"))
     s, e  = month_range(month)
-    expenses = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+    all_txs = Expense.query.filter(Expense.date >= s, Expense.date < e).all()
+
+    # Separate expense vs income
+    expense_txs = [ex for ex in all_txs if (ex.tx_type or "expense") != "income"]
+    income_txs  = [ex for ex in all_txs if (ex.tx_type or "expense") == "income"]
 
     by_category = defaultdict(float)
     by_day      = defaultdict(float)
-    for ex in expenses:
+    for ex in expense_txs:
         by_category[ex.category]    += ex.amount
         by_day[ex.date.isoformat()] += ex.amount
 
@@ -774,11 +811,16 @@ def monthly_stats():
         daily[cur.isoformat()] = by_day.get(cur.isoformat(), 0.0)
         cur += timedelta(days=1)
 
+    total_income  = sum(ex.amount for ex in income_txs)
+    total_expense = sum(ex.amount for ex in expense_txs)
+
     return jsonify({
-        "total":       sum(ex.amount for ex in expenses),
-        "count":       len(expenses),
-        "by_category": dict(by_category),
-        "by_day":      daily,
+        "total":         total_expense,
+        "total_income":  total_income,
+        "count":         len(expense_txs),
+        "income_count":  len(income_txs),
+        "by_category":   dict(by_category),
+        "by_day":        daily,
     })
 
 
@@ -1088,76 +1130,94 @@ def seed():
     MonthlySummary.query.delete()
     Setting.query.delete()
     db.session.commit()
-
-    rows = [
-        ("2026-06-01", 180,  "Restaurant",         "Lunch at MOS Burger",                     "negative", "feeling stressed before exam",       "study-related"),
-        ("2026-06-02",  45,  "Public Transport",    "Bus pass top-up",                          "neutral",  "",                                   None),
-        ("2026-06-03", 320,  "Entertainment",       "Concert tickets with friends",             "positive", "so excited for tonight!",            "social"),
-        ("2026-06-04",  95,  "Groceries",           "Weekly vegetable shopping",                "neutral",  "",                                   None),
-        ("2026-06-05", 580,  "Fashion",             "New running shoes on sale",                "positive", "great deal, 40% off!",               None),
-        ("2026-06-06", 220,  "Education",           "Textbook for statistics course",           "negative", "expensive but necessary",            "study-related"),
-        ("2026-06-07",  60,  "Cafe & Drinks",       "Coffee and snacks during study session",   "neutral",  "",                                   "study-related"),
-        ("2026-06-08", 150,  "Healthcare",          "Hospital checkup copay",                   "negative", "anxious about appointment",          "health-related"),
-        ("2026-06-09",  85,  "Electricity",         "Monthly electricity bill",                 "neutral",  "",                                   None),
-        ("2026-06-10", 200,  "Restaurant",          "Team dinner after project presentation",   "positive", "celebrating our success!",           "work-related"),
-        ("2026-06-12",1200,  "Electronics",         "Impulse bought gaming controller",         "negative", "retail therapy gone wrong",          None),
-        ("2026-06-14",  75,  "Taxi & Rideshare",    "Taxi home late night after studying",      "negative", "exhausted from finals prep",         "study-related"),
-        ("2026-06-16", 350,  "Streaming & Software","Streaming subscriptions and snacks",       "positive", "needed a break from studying",       "social"),
-        ("2026-06-18", 480,  "Healthcare",          "Gym membership monthly fee",               "positive", "investing in my health",             "health-related"),
-        ("2026-06-20", 130,  "Cafe & Drinks",       "Stress eating bubble tea and snacks",      "negative", "finals week anxiety hitting hard",   "study-related"),
-        ("2026-06-22",2800,  "Flight",              "Round trip to Taipei for interview",       "positive", "nervous but excited",                "work-related"),
-        ("2026-06-24", 650,  "Meat & Dairy",        "BBQ supplies for graduation party",        "positive", "celebrating with friends",           "social"),
-        ("2026-06-26", 120,  "Public Transport",    "MRT monthly pass renewal",                 "neutral",  "",                                   None),
-        ("2026-06-28",  35,  "Groceries",           "Fruit and vegetables from market",         "positive", "trying to eat healthier",            "health-related"),
-        ("2026-06-30", 890,  "Car & Fuel",          "Gas for road trip to Kenting",             "positive", "weekend adventure with friends!",    "social"),
-    ]
-
-    for d, amt, cat, desc, em, en, ctx in rows:
-        carbon = calculate_carbon(amt, cat)
-        db.session.add(Expense(
-            amount=amt, category=cat, description=desc,
-            emotion=em, emotion_note=en, context_tag=ctx,
-            carbon_kg=carbon,
-            date=datetime.strptime(d, "%Y-%m-%d").date(),
-        ))
-
-    budgets = [
-        ("Restaurant", 800),      ("Public Transport", 200),
-        ("Entertainment", 400),   ("Fashion", 600),
-        ("Healthcare", 600),      ("Education", 500),
-        ("Electricity", 300),     ("Groceries", 500),
-    ]
-    for cat, lim in budgets:
-        db.session.add(Budget(category=cat, monthly_limit=lim))
-
-    db.session.add(Setting(key="monthly_income", value="12000"))
-    db.session.commit()
-    return jsonify({"message": "Seed data loaded", "expenses": len(rows)})
+    _run_seed()
+    count = Expense.query.count()
+    return jsonify({"message": "Seed data loaded", "expenses": count})
 
 
 # ── Init & Migration ─────────────────────────────────────────────────────────
 
+def _run_seed():
+    """Populate the database with demo data (called on first launch)."""
+    from datetime import datetime as _dt
+    rows = [
+        ("2026-06-01", 180,  "expense", "Restaurant",       "Lunch at MOS Burger",                     "negative", "study-related"),
+        ("2026-06-01", 12000,"income",  "Other",             "Monthly salary / allowance",              "positive", None),
+        ("2026-06-02",  45,  "expense", "Public Transport",  "Bus pass top-up",                         "neutral",  None),
+        ("2026-06-03", 320,  "expense", "Entertainment",     "Concert tickets with friends",            "positive", "social"),
+        ("2026-06-04",  95,  "expense", "Groceries",         "Weekly vegetable shopping",               "neutral",  None),
+        ("2026-06-05", 580,  "expense", "Fashion",           "New running shoes on sale",               "positive", None),
+        ("2026-06-06", 220,  "expense", "Education",         "Textbook for statistics course",          "negative", "study-related"),
+        ("2026-06-07",  60,  "expense", "Cafe & Drinks",     "Coffee during study session",             "neutral",  "study-related"),
+        ("2026-06-08", 150,  "expense", "Healthcare",        "Hospital checkup copay",                  "negative", "health-related"),
+        ("2026-06-09",  85,  "expense", "Electricity",       "Monthly electricity bill",                "neutral",  None),
+        ("2026-06-10", 200,  "expense", "Restaurant",        "Team dinner after presentation",          "positive", "work-related"),
+        ("2026-06-12",1200,  "expense", "Electronics",       "Impulse bought gaming controller",        "negative", None),
+        ("2026-06-14",  75,  "expense", "Taxi & Rideshare",  "Taxi home late night after studying",     "negative", "study-related"),
+        ("2026-06-16", 350,  "expense", "Streaming & Software","Streaming subscriptions",              "positive", "social"),
+        ("2026-06-18", 480,  "expense", "Healthcare",        "Gym membership monthly fee",              "positive", "health-related"),
+        ("2026-06-20", 130,  "expense", "Cafe & Drinks",     "Stress eating bubble tea",                "negative", "study-related"),
+        ("2026-06-22",2800,  "expense", "Flight",            "Round trip to Taipei for interview",      "positive", "work-related"),
+        ("2026-06-24", 650,  "expense", "Meat & Dairy",      "BBQ supplies for graduation party",       "positive", "social"),
+        ("2026-06-26", 120,  "expense", "Public Transport",  "MRT monthly pass renewal",                "neutral",  None),
+        ("2026-06-28",  35,  "expense", "Groceries",         "Fruit and vegetables from market",        "positive", "health-related"),
+        ("2026-06-30", 890,  "expense", "Car & Fuel",        "Gas for road trip to Kenting",            "positive", "social"),
+    ]
+    for d, amt, tx_type, cat, desc, em, ctx in rows:
+        carbon = 0.0 if tx_type == "income" else calculate_carbon(amt, cat)
+        db.session.add(Expense(
+            amount=amt, tx_type=tx_type, category=cat, description=desc,
+            emotion=em, context_tag=ctx, carbon_kg=carbon,
+            date=_dt.strptime(d, "%Y-%m-%d").date(),
+        ))
+    for cat, lim in [("Restaurant",800),("Public Transport",200),("Entertainment",400),
+                     ("Fashion",600),("Healthcare",600),("Education",500),
+                     ("Electricity",300),("Groceries",500)]:
+        db.session.add(Budget(category=cat, monthly_limit=lim))
+    s = Setting.query.filter_by(key="monthly_income").first()
+    if not s:
+        db.session.add(Setting(key="monthly_income", value="12000"))
+    db.session.commit()
+
+
 with app.app_context():
     db.create_all()
+
+    # Migrate: add carbon_kg column if missing
     try:
         db.session.execute(db.text("SELECT carbon_kg FROM expenses LIMIT 1"))
     except Exception:
         try:
-            db.session.execute(db.text(
-                "ALTER TABLE expenses ADD COLUMN carbon_kg FLOAT DEFAULT 0.0"
-            ))
+            db.session.execute(db.text("ALTER TABLE expenses ADD COLUMN carbon_kg FLOAT DEFAULT 0.0"))
             db.session.commit()
         except Exception:
             db.session.rollback()
 
+    # Migrate: add tx_type column if missing
     try:
-        nulls = Expense.query.filter(
-            db.or_(Expense.carbon_kg == None, Expense.carbon_kg == 0.0)
-        ).all()
+        db.session.execute(db.text("SELECT tx_type FROM expenses LIMIT 1"))
+    except Exception:
+        try:
+            db.session.execute(db.text("ALTER TABLE expenses ADD COLUMN tx_type VARCHAR(10) DEFAULT 'expense'"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    # Backfill missing carbon_kg
+    try:
+        nulls = Expense.query.filter(db.or_(Expense.carbon_kg == None, Expense.carbon_kg == 0.0),
+                                     Expense.tx_type != "income").all()
         if nulls:
             for ex in nulls:
                 ex.carbon_kg = calculate_carbon(ex.amount, ex.category)
             db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Auto-seed on first launch (empty database)
+    try:
+        if Expense.query.count() == 0:
+            _run_seed()
     except Exception:
         db.session.rollback()
 

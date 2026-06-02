@@ -91,6 +91,19 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 .earth-stressed{animation:earthStressed 2.5s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(251,146,60,.65))}
 .earth-critical{animation:earthCritical 3s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(148,163,178,.3)) saturate(.35)}
 .glow-thriving{animation:glowThriving 3s ease-in-out infinite}
+/* ── Rank-up celebration modal ─────────────────────────────────────── */
+#rankup-modal{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center}
+#rankup-modal.open{display:flex}
+#rankup-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.7)}
+#rankup-panel{position:relative;background:#1e2022;border:1px solid #524342;border-radius:28px;padding:2.5rem 2rem;text-align:center;max-width:340px;width:90%;animation:rankupIn .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes rankupIn{0%{opacity:0;transform:scale(.5)}100%{opacity:1;transform:scale(1)}}
+@keyframes confettiFall{0%{opacity:1;transform:translateY(-10px) rotate(0)}100%{opacity:0;transform:translateY(80px) rotate(720deg)}}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall .8s ease-out forwards}
+/* ── Income type toggle in Add sheet ──────────────────────────────── */
+.tx-type-btn{flex:1;py:10px;border-radius:12px;font-size:14px;font-weight:700;border:2px solid transparent;transition:all .15s;cursor:pointer;padding:10px}
+.tx-type-btn.active-expense{background:rgba(255,180,171,.12);border-color:#ffb4ab;color:#ffb4ab}
+.tx-type-btn.active-income{background:rgba(74,222,128,.12);border-color:#4ade80;color:#4ade80}
+.tx-type-btn:not(.active-expense):not(.active-income){background:#1a1c1e;color:#6b7f92}
 /* Earth tooltip */
 .earth-tooltip-wrap{position:relative;display:inline-block}
 .earth-tooltip-box{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%) translateY(8px);min-width:230px;max-width:290px;background:rgba(20,22,24,.97);border:1px solid rgba(255,255,255,.13);border-radius:16px;padding:14px 16px;opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:500;backdrop-filter:blur(16px);text-align:left;white-space:normal;line-height:1.45}
@@ -360,9 +373,12 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <div class="relative h-[220px]"><canvas id="catChart"></canvas></div>
     </div>
   </div>
-  <!-- Carbon chart -->
+  <!-- Carbon chart + month-over-month delta -->
   <div class="bg-surface-container rounded-[24px] p-6 border border-surface-variant mb-6">
-    <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase mb-4" data-i18n="chart_carbon">🌿 Carbon by Category (kg CO₂e)</h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="font-label-lg text-[14px] text-on-surface-variant uppercase" data-i18n="chart_carbon">🌿 Carbon by Category (kg CO₂e)</h3>
+      <div id="carbon-delta-badge" class="hidden text-[12px] font-bold px-3 py-1 rounded-full"></div>
+    </div>
     <div class="relative h-[200px]"><canvas id="carbonChart"></canvas></div>
   </div>
   <!-- Emotion chart — NEW -->
@@ -602,11 +618,33 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 </div>
 
 <!-- ═══ ADD TRANSACTION SHEET ════════════════════════════════════════════ -->
+<!-- ═══ RANK-UP CELEBRATION MODAL ════════════════════════════════════════ -->
+<div id="rankup-modal">
+  <div id="rankup-modal-bg" onclick="closeRankup()"></div>
+  <div id="rankup-panel">
+    <div id="rankup-confetti" class="absolute inset-0 overflow-hidden pointer-events-none rounded-[28px]"></div>
+    <div class="text-5xl mb-3" id="rankup-emoji">🌍</div>
+    <div id="rankup-title" class="font-headline-md text-[22px] font-bold text-primary mb-1">Rank Up!</div>
+    <div id="rankup-sub" class="text-[14px] text-on-surface-variant mb-3">You've reached a new eco rank</div>
+    <div class="bg-surface-container-high rounded-2xl px-6 py-3 mb-5 inline-block">
+      <span class="text-[18px] font-bold text-eco" id="rankup-name">Guardian</span>
+    </div>
+    <button id="rankup-btn" onclick="closeRankup()" class="w-full bg-primary text-on-primary font-bold py-3 rounded-xl">Keep it up! 🌿</button>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeAddSheet()"></div>
 <div class="bottom-sheet" id="add-sheet">
   <div class="w-9 h-1 bg-surface-variant rounded-full mx-auto mt-3 mb-5"></div>
-  <h3 class="font-headline-md text-[20px] font-bold text-on-surface mb-5" data-i18n="sheet_title">Add Transaction</h3>
-  <div class="mb-4">
+  <h3 class="font-headline-md text-[20px] font-bold text-on-surface mb-4" data-i18n="sheet_title">Add Transaction</h3>
+
+  <!-- ── Income / Expense Toggle ── -->
+  <div class="flex gap-2 mb-5">
+    <button id="type-expense-btn" class="tx-type-btn active-expense" onclick="setTxType('expense')" data-i18n="type_expense">💸 Expense</button>
+    <button id="type-income-btn"  class="tx-type-btn" onclick="setTxType('income')"  data-i18n="type_income">💰 Income</button>
+  </div>
+
+  <div class="mb-4" id="nlp-row">
     <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_describe">Describe your expense</label>
     <textarea id="nlp-text" rows="2" placeholder='e.g. "Lunch at MOS Burger 180, feeling stressed"' class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none resize-none"></textarea>
   </div>
@@ -616,7 +654,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_amount">Amount (TWD)</label>
     <input type="number" id="add-amount" placeholder="0" min="0" step="1" oninput="updateCarbonEst()" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface focus:border-primary focus:outline-none">
   </div>
-  <div class="mb-4">
+  <div class="mb-4" id="cat-section">
     <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_cat">Category</label>
     <div class="cat-grid" id="cat-grid"></div>
   </div>
@@ -629,7 +667,7 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <input type="text" id="add-note" placeholder="Optional description" class="w-full bg-surface-container-lowest border border-surface-variant rounded-xl px-4 py-3 text-sm text-on-surface placeholder-outline focus:border-primary focus:outline-none">
   </div>
   <!-- Context Tag -->
-  <div class="mb-4">
+  <div class="mb-4" id="ctx-section">
     <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_ctx">Context Tag</label>
     <div class="flex gap-2 flex-wrap" id="ctx-chips">
       <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="none" onclick="setCtxTag(this)" data-i18n="ctx_none">None</button>
@@ -639,7 +677,8 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <button class="ctx-chip px-3 py-1.5 rounded-full text-[12px] font-semibold border border-surface-variant text-on-surface-variant hover:border-outline transition-colors" data-ctx="health-related" onclick="setCtxTag(this)" data-i18n="ctx_health">🏃 Health</button>
     </div>
   </div>
-  <div class="mb-4">
+  <!-- Mood (expense only) -->
+  <div class="mb-4" id="mood-row">
     <label class="font-label-lg text-[12px] text-on-surface-variant uppercase block mb-2" data-i18n="sheet_mood">Mood</label>
     <div class="flex gap-2">
       <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="positive" onclick="setEmotion(this)" data-i18n="mood_happy">😊 Happy</button>
@@ -647,9 +686,20 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
       <button class="mood-chip px-4 py-2 rounded-full text-sm font-semibold border border-surface-variant text-on-surface-variant transition-colors" data-em="negative" onclick="setEmotion(this)" data-i18n="mood_stressed">😟 Stressed</button>
     </div>
   </div>
-  <div class="rounded-xl p-4 mb-5 text-sm font-semibold flex items-center gap-2 transition-colors border" id="carbon-est" style="background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.2);color:#4ade80">
-    <span data-i18n="sheet_carbon">🌿 Estimated carbon</span>: <strong id="est-val">0.00</strong> kg CO₂e
+
+  <!-- Carbon estimate + override (expense only) -->
+  <div id="carbon-row">
+    <div class="rounded-xl p-4 mb-2 text-sm font-semibold flex items-center justify-between gap-2 transition-colors border" id="carbon-est" style="background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.2);color:#4ade80">
+      <span><span data-i18n="sheet_carbon">🌿 Estimated carbon</span>: <strong id="est-val">0.00</strong> kg CO₂e</span>
+      <button onclick="toggleCarbonOverride()" class="text-[11px] font-semibold text-on-surface-variant hover:text-primary transition-colors" data-i18n="btn_override_carbon">Override</button>
+    </div>
+    <div id="carbon-override-row" style="display:none" class="flex items-center gap-2 mb-3">
+      <input type="number" id="carbon-override-input" placeholder="Custom kg CO₂e" min="0" step="0.01"
+        class="flex-1 bg-surface-container-lowest border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
+      <button onclick="clearCarbonOverride()" class="text-on-surface-variant hover:text-primary text-sm px-2" data-i18n="btn_clear">✕</button>
+    </div>
   </div>
+
   <button onclick="saveTransaction()" class="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(255,221,219,0.2)] hover:scale-[1.01] active:scale-95 transition-all duration-200 text-[16px]" data-i18n="btn_save_tx">
     💾 Save Transaction
   </button>
@@ -694,7 +744,8 @@ function refreshCurrentScreen() {
 }
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
-let currentLang = localStorage.getItem('sb_lang') || 'en';
+let currentLang = localStorage.getItem('sb_lang') ||
+  (navigator.language && navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en');
 const I18N = {
   en:{
     nav_dashboard:'Dashboard',nav_analytics:'Analytics',nav_history:'History',
@@ -746,6 +797,10 @@ const I18N = {
     no_results:'No transactions found',comp_fail:'Analysis load failed',
     lbl_total_spent:'TOTAL SPENT',lbl_transactions:'TRANSACTIONS',lbl_avg_day:'AVG / DAY',lbl_savings:'SAVINGS',
     comp_expense_label:'Expense',comp_income_label:'Income',
+    type_expense:'💸 Expense',type_income:'💰 Income',
+    rankup_title:'Rank Up! 🎉',rankup_sub:"You've reached a new eco rank",rankup_btn:'Keep it up! 🌿',
+    btn_override_carbon:'Override',carbon_delta_up:(d)=>`+${d} kg vs last month`,carbon_delta_down:(d)=>`${d} kg vs last month`,
+    income_label:'Income',
     earth_thriving_name:'🌍 Thriving',earth_neutral_name:'🌎 Neutral',earth_stressed_name:'🌏 Stressed',earth_critical_name:'🌫️ Critical',
     earth_thriving_msg:'Your planet is thriving! Keep it up!',
     earth_neutral_msg:'Doing okay. Small changes help!',
@@ -807,6 +862,10 @@ const I18N = {
     no_results:'找不到交易記錄',comp_fail:'分析載入失敗',
     lbl_total_spent:'總支出',lbl_transactions:'筆數',lbl_avg_day:'日均花費',lbl_savings:'結餘',
     comp_expense_label:'支出',comp_income_label:'收入',
+    type_expense:'💸 支出',type_income:'💰 收入',
+    rankup_title:'升級了！🎉',rankup_sub:'你達成了新的環保等級',rankup_btn:'繼續加油！🌿',
+    btn_override_carbon:'手動輸入',carbon_delta_up:(d)=>`+${d} kg（比上月增加）`,carbon_delta_down:(d)=>`${d} kg（比上月減少）`,
+    income_label:'收入',
     earth_thriving_name:'🌍 蓬勃健康',earth_neutral_name:'🌎 普通',earth_stressed_name:'🌏 有壓力',earth_critical_name:'🌫️ 危機',
     earth_thriving_msg:'地球很健康！繼續保持！',
     earth_neutral_msg:'還不錯，小改變就能更好！',
@@ -876,9 +935,10 @@ const CAT_COLORS = {
 
 const TITLES = {home:'Overview',analytics:'Analytics',history:'History',eco:'Eco Profile'};
 
-let selectedCat='Restaurant', selectedEmotion='neutral', selectedCtx='none';
+let selectedCat='Restaurant', selectedEmotion='neutral', selectedCtx='none', selectedTxType='expense';
 let catChart=null, trendChart=null, carbonChart=null, emotionChart=null;
 let searchTimer=null;
+let _lastKnownRank = localStorage.getItem('sb_last_rank') || null;
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -950,6 +1010,71 @@ function showEcoPop(msg, color) {
   setTimeout(() => el.remove(), 1000);
 }
 
+// ── Rank-up celebration ───────────────────────────────────────────────────────
+function checkRankUp(newRank, newEmoji) {
+  const RANK_ORDER = ['Seedling','Sprout','Guardian','Earth Protector'];
+  if (_lastKnownRank && _lastKnownRank !== newRank) {
+    const oldIdx = RANK_ORDER.indexOf(_lastKnownRank);
+    const newIdx = RANK_ORDER.indexOf(newRank);
+    if (newIdx > oldIdx) showRankup(newRank, newEmoji);
+  }
+  _lastKnownRank = newRank;
+  localStorage.setItem('sb_last_rank', newRank);
+}
+function showRankup(rankName, emoji) {
+  document.getElementById('rankup-emoji').textContent = emoji;
+  document.getElementById('rankup-name').textContent  = rankName;
+  document.getElementById('rankup-title').textContent = t('rankup_title');
+  document.getElementById('rankup-sub').textContent   = t('rankup_sub');
+  document.getElementById('rankup-btn').textContent   = t('rankup_btn');
+  document.getElementById('rankup-modal').classList.add('open');
+  // Confetti
+  const wrap = document.getElementById('rankup-confetti');
+  wrap.innerHTML = '';
+  const colors = ['#ffdddb','#4ade80','#fbbf24','#9ecede','#fb923c','#f472b6'];
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.cssText = `left:${5+Math.random()*90}%;top:${Math.random()*30}%;background:${colors[i%colors.length]};animation-delay:${Math.random()*.4}s;animation-duration:${.6+Math.random()*.5}s`;
+    wrap.appendChild(p);
+  }
+}
+function closeRankup() {
+  document.getElementById('rankup-modal').classList.remove('open');
+}
+
+// ── Tx-type toggle (Income / Expense) ────────────────────────────────────────
+function setTxType(type) {
+  selectedTxType = type;
+  const expBtn = document.getElementById('type-expense-btn');
+  const incBtn = document.getElementById('type-income-btn');
+  expBtn.className = 'tx-type-btn ' + (type==='expense' ? 'active-expense' : '');
+  incBtn.className = 'tx-type-btn ' + (type==='income'  ? 'active-income'  : '');
+  // Hide expense-only fields for income entries
+  const expOnly = ['nlp-row','cat-section','ctx-section','mood-row','carbon-row'];
+  expOnly.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (type === 'income') ? 'none' : '';
+  });
+  // Update placeholder
+  const textarea = document.getElementById('nlp-text');
+  if (textarea) textarea.placeholder = type === 'income'
+    ? (currentLang==='zh' ? '例如：「薪水 12000」或「打工收入 3500」' : 'e.g. "Salary 12000" or "Part-time income 3500"')
+    : (currentLang==='zh' ? '例如：「MOS 漢堡午餐 180，壓力好大」' : 'e.g. "Lunch at MOS Burger 180, feeling stressed"');
+  updateCarbonEst();
+}
+
+// ── Carbon override ───────────────────────────────────────────────────────────
+function toggleCarbonOverride() {
+  const row = document.getElementById('carbon-override-row');
+  row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+  if (row.style.display !== 'none') document.getElementById('carbon-override-input').focus();
+}
+function clearCarbonOverride() {
+  document.getElementById('carbon-override-input').value = '';
+  document.getElementById('carbon-override-row').style.display = 'none';
+}
+
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1005,6 +1130,7 @@ async function loadDashboard() {
     document.getElementById('rank-sub').textContent   = eco.next_rank_at
       ? t('pts_to_next', eco.next_rank_at - eco.eco_score)
       : t('max_rank');
+    checkRankUp(eco.rank, eco.rank_emoji);
 
     const cc = eco.monthly_carbon < 300 ? 'text-eco'
              : eco.monthly_carbon < 600 ? 'text-[#fbbf24]'
@@ -1120,19 +1246,24 @@ async function loadRecentTxs(month) {
 }
 
 function txCard(e) {
-  const icon = CATS[e.category] || '📦';
+  const isIncome = (e.tx_type === 'income');
+  const icon = isIncome ? '💰' : (CATS[e.category] || '📦');
   const cd   = carbonDotClass(e.carbon_kg);
-  return `<div class="flex items-center justify-between p-4 bg-surface-container-highest rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-surface-bright transition-colors cursor-pointer active:scale-[0.98]">
+  const amtColor = isIncome ? '#4ade80' : '#e2e2e5';
+  const amtPrefix = isIncome ? '+' : '-';
+  const subLabel  = isIncome ? `<span class="text-[11px] font-semibold" style="color:#4ade80">${t('income_label')}</span>` :
+    `<div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>`;
+  return `<div class="flex items-center justify-between p-4 bg-surface-container-highest rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-surface-bright transition-colors cursor-pointer active:scale-[0.98]" style="${isIncome?'border:1px solid rgba(74,222,128,.2)':''}">
     <div class="flex items-center gap-4">
-      <div class="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-[18px] border border-surface-variant shrink-0">${icon}</div>
+      <div class="w-11 h-11 rounded-full flex items-center justify-center text-[18px] border shrink-0" style="${isIncome?'background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3)':'background:#1a1c1e;border-color:#333537'}">${icon}</div>
       <div class="flex flex-col min-w-0">
         <span class="text-[15px] text-on-surface font-semibold truncate max-w-[160px]">${esc(e.description || e.category)}</span>
         <span class="font-label-lg text-[12px] text-on-surface-variant font-normal">${e.date}</span>
       </div>
     </div>
     <div class="text-right shrink-0 ml-3">
-      <div class="font-headline-md text-[16px] text-on-surface">-${fmtMoney(e.amount)}</div>
-      <div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>
+      <div class="font-headline-md text-[16px] font-bold" style="color:${amtColor}">${amtPrefix}${fmtMoney(e.amount)}</div>
+      ${subLabel}
     </div>
   </div>`;
 }
@@ -1160,6 +1291,17 @@ async function loadAnalytics() {
     document.getElementById('esg-fill').style.width      = Math.min(pct, 100) + '%';
     document.getElementById('esg-fill').style.background = pct < 40 ? '#c0ceab' : pct < 70 ? '#e8d284' : pct < 100 ? '#fb923c' : '#ffb4ab';
     document.getElementById('esg-val').textContent       = `${carbon.total_month.toFixed(1)} / ${tw} kg`;
+
+    // Carbon delta vs last month
+    const badge = document.getElementById('carbon-delta-badge');
+    if (badge && carbon.carbon_delta != null && carbon.prev_month > 0) {
+      const d = Math.abs(carbon.carbon_delta).toFixed(1);
+      const up = carbon.carbon_delta > 0;
+      badge.textContent = up ? t('carbon_delta_up', d) : t('carbon_delta_down', '-' + d);
+      badge.style.background = up ? 'rgba(248,113,113,.15)' : 'rgba(74,222,128,.15)';
+      badge.style.color = up ? '#f87171' : '#4ade80';
+      badge.classList.remove('hidden');
+    } else if (badge) { badge.classList.add('hidden'); }
   } catch(e) { console.error(e); }
 }
 
@@ -1352,21 +1494,27 @@ async function doSearch() {
 }
 
 function txCardDeletable(e) {
-  const icon = CATS[e.category] || '📦';
+  const isIncome = (e.tx_type === 'income');
+  const icon = isIncome ? '💰' : (CATS[e.category] || '📦');
   const cd   = carbonDotClass(e.carbon_kg);
   const ctx  = e.context_tag ? `<span class="ml-1 text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container border border-surface-variant">${esc(e.context_tag)}</span>` : '';
-  return `<div class="flex items-center justify-between p-4 bg-surface-container-highest rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-surface-bright transition-colors" id="tx-${e.id}">
+  const amtColor  = isIncome ? '#4ade80' : '#e2e2e5';
+  const amtPrefix = isIncome ? '+' : '-';
+  const carbonSub = isIncome
+    ? `<span class="text-[11px] font-semibold" style="color:#4ade80">${t('income_label')}</span>`
+    : `<div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>`;
+  return `<div class="flex items-center justify-between p-4 bg-surface-container-highest rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.2)] hover:bg-surface-bright transition-colors" id="tx-${e.id}" style="${isIncome?'border:1px solid rgba(74,222,128,.2)':''}">
     <div class="flex items-center gap-3 min-w-0">
-      <div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-[16px] border border-surface-variant shrink-0">${icon}</div>
+      <div class="w-10 h-10 rounded-full flex items-center justify-center text-[16px] border shrink-0" style="${isIncome?'background:rgba(74,222,128,.1);border-color:rgba(74,222,128,.3)':'background:#1a1c1e;border-color:#333537'}">${icon}</div>
       <div class="flex flex-col min-w-0">
         <span class="text-[14px] text-on-surface font-semibold truncate">${esc(e.description || e.category)}</span>
-        <span class="text-[12px] text-on-surface-variant flex items-center flex-wrap gap-1">${e.date} · ${e.emotion==='positive'?'😊':e.emotion==='negative'?'😟':'😐'}${ctx}</span>
+        <span class="text-[12px] text-on-surface-variant flex items-center flex-wrap gap-1">${e.date}${!isIncome ? ' · ' + (e.emotion==='positive'?'😊':e.emotion==='negative'?'😟':'😐') : ''}${ctx}</span>
       </div>
     </div>
     <div class="flex items-center gap-3 shrink-0 ml-2">
       <div class="text-right">
-        <div class="font-headline-md text-[15px] text-on-surface">-${fmtMoney(e.amount)}</div>
-        <div class="flex items-center gap-1 justify-end text-[11px] text-on-surface-variant"><span class="c-dot ${cd}"></span>${e.carbon_kg.toFixed(2)}kg</div>
+        <div class="font-headline-md text-[15px] font-bold" style="color:${amtColor}">${amtPrefix}${fmtMoney(e.amount)}</div>
+        ${carbonSub}
       </div>
       <button onclick="deleteTx(${e.id})" class="text-error hover:bg-error/10 p-2 rounded-full transition-colors" title="Delete">
         <span class="material-symbols-outlined text-[18px]">delete</span>
@@ -1534,16 +1682,19 @@ function setCtxTag(el) {
 }
 
 function updateCarbonEst() {
-  const amount = parseFloat(document.getElementById('add-amount').value) || 0;
-  let carbon = selectedCat === 'Electricity'
-    ? (amount / 3.5) * 0.495
-    : amount * (CARBON_FACTORS[selectedCat] || 0.04);
+  if (selectedTxType === 'income') return;
+  const overrideEl = document.getElementById('carbon-override-input');
+  const override   = overrideEl && overrideEl.value !== '' ? parseFloat(overrideEl.value) : null;
+  const amount     = parseFloat(document.getElementById('add-amount').value) || 0;
+  let carbon = override !== null ? override
+    : (selectedCat === 'Electricity' ? (amount / 3.5) * 0.495 : amount * (CARBON_FACTORS[selectedCat] || 0.04));
   document.getElementById('est-val').textContent = carbon.toFixed(2);
   const box = document.getElementById('carbon-est');
-  if (carbon < .5)       { box.style.background='rgba(74,222,128,.08)'; box.style.borderColor='rgba(74,222,128,.2)';  box.style.color='#4ade80'; }
-  else if (carbon < 2)   { box.style.background='rgba(251,191,36,.08)'; box.style.borderColor='rgba(251,191,36,.2)';  box.style.color='#fbbf24'; }
-  else if (carbon < 10)  { box.style.background='rgba(251,146,60,.08)'; box.style.borderColor='rgba(251,146,60,.2)';  box.style.color='#fb923c'; }
-  else                   { box.style.background='rgba(255,180,171,.08)';box.style.borderColor='rgba(255,180,171,.2)'; box.style.color='#ffb4ab'; }
+  if (!box) return;
+  if (carbon < .5)      { box.style.background='rgba(74,222,128,.08)'; box.style.borderColor='rgba(74,222,128,.2)';  box.style.color='#4ade80'; }
+  else if (carbon < 2)  { box.style.background='rgba(251,191,36,.08)'; box.style.borderColor='rgba(251,191,36,.2)';  box.style.color='#fbbf24'; }
+  else if (carbon < 10) { box.style.background='rgba(251,146,60,.08)'; box.style.borderColor='rgba(251,146,60,.2)';  box.style.color='#fb923c'; }
+  else                  { box.style.background='rgba(255,180,171,.08)';box.style.borderColor='rgba(255,180,171,.2)'; box.style.color='#ffb4ab'; }
 }
 
 function openAddSheet() {
@@ -1589,19 +1740,32 @@ async function doParse() {
 async function saveTransaction() {
   const amount = parseFloat(document.getElementById('add-amount').value);
   if (!amount || amount <= 0) { toast('Enter a valid amount', 'warn'); return; }
+
+  // Carbon override (expense only)
+  const overrideEl = document.getElementById('carbon-override-input');
+  const overrideVal = overrideEl && overrideEl.value !== '' ? parseFloat(overrideEl.value) : null;
+
   const data = {
     amount,
-    category:    selectedCat,
+    tx_type:     selectedTxType,
+    category:    selectedTxType === 'income' ? 'Other' : selectedCat,
     date:        document.getElementById('add-date').value || TODAY,
-    description: document.getElementById('add-note').value || selectedCat,
-    emotion:     selectedEmotion,
-    context_tag: selectedCtx !== 'none' ? selectedCtx : null,
+    description: document.getElementById('add-note').value || (selectedTxType === 'income' ? 'Income' : selectedCat),
+    emotion:     selectedTxType === 'income' ? 'positive' : selectedEmotion,
+    context_tag: selectedTxType === 'income' ? null : (selectedCtx !== 'none' ? selectedCtx : null),
   };
+  if (overrideVal !== null && selectedTxType === 'expense') data.carbon_kg = overrideVal;
+
   try {
     const saved = await api('/api/expenses', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
-    if (saved.carbon_kg < .05)  showEcoPop('+🌿 eco point!', '#4ade80');
-    else if (saved.carbon_kg > 2) showEcoPop('🌫️ ' + saved.carbon_kg.toFixed(1) + ' kg CO₂e', '#fb923c');
-    toast('Transaction saved!', 'success');
+    if (selectedTxType === 'income') {
+      showEcoPop('+' + fmtMoney(amount), '#4ade80');
+    } else if (saved.carbon_kg < .05) {
+      showEcoPop('+🌿 eco point!', '#4ade80');
+    } else if (saved.carbon_kg > 2) {
+      showEcoPop('🌫️ ' + saved.carbon_kg.toFixed(1) + ' kg CO₂e', '#fb923c');
+    }
+    toast(selectedTxType === 'income' ? (currentLang==='zh' ? '收入已記錄！' : 'Income recorded!') : (currentLang==='zh' ? '已儲存！' : 'Saved!'), 'success');
     closeAddSheet();
     resetAddForm();
     loadDashboard();
@@ -1609,13 +1773,16 @@ async function saveTransaction() {
 }
 
 function resetAddForm() {
-  document.getElementById('nlp-text').value  = '';
+  document.getElementById('nlp-text').value   = '';
   document.getElementById('add-amount').value = '';
-  document.getElementById('add-note').value  = '';
-  document.getElementById('add-date').value  = TODAY;
+  document.getElementById('add-note').value   = '';
+  document.getElementById('add-date').value   = TODAY;
   selectedCat     = 'Restaurant';
   selectedEmotion = 'neutral';
   selectedCtx     = 'none';
+  selectedTxType  = 'expense';
+  clearCarbonOverride();
+  setTxType('expense');
   buildCatGrid();
   document.querySelectorAll('.mood-chip').forEach(b => {
     const n = b.dataset.em === 'neutral';
