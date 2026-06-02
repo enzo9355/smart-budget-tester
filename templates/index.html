@@ -74,6 +74,12 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 .badge-high{background:rgba(255,180,171,.12);color:#ffb4ab;border:1px solid rgba(255,180,171,.25)}
 .badge-medium{background:rgba(251,146,60,.12);color:#fb923c;border:1px solid rgba(251,146,60,.25)}
 .badge-low{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25)}
+/* Comprehensive analysis modal */
+#comp-modal{position:fixed;inset:0;z-index:300;display:none;flex-direction:column}
+#comp-modal.open{display:flex}
+#comp-modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.72)}
+#comp-modal-panel{position:relative;margin:auto;width:100%;max-width:760px;max-height:92vh;background:#1a1c1e;border-radius:24px;overflow-y:auto;padding:1.5rem;border:1px solid #333537}
+@media(max-width:640px){#comp-modal-panel{margin:auto 0 0;border-radius:24px 24px 0 0;max-height:96vh}}
 </style>
 </head>
 <body class="bg-background text-on-surface font-body-md antialiased min-h-screen selection:bg-primary selection:text-on-primary">
@@ -305,9 +311,10 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
 <div id="screen-analytics" class="screen">
   <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
     <input type="month" id="ana-month" onchange="loadAnalytics()" class="bg-surface-container-high border border-surface-variant rounded-xl px-3 py-2 text-sm text-on-surface focus:border-primary focus:outline-none">
-    <div class="flex gap-2">
+    <div class="flex gap-2 flex-wrap">
       <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" onclick="doExportCSV()">Export CSV</button>
       <button class="font-label-lg text-[13px] text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors" id="gen-btn" onclick="generateReport()">✨ AI Report</button>
+      <button class="font-label-lg text-[13px] bg-secondary/10 border border-secondary/30 text-secondary px-4 py-2 rounded-full hover:bg-secondary/20 active:scale-95 transition-all" onclick="openCompModal()">📊 收支分析</button>
     </div>
   </div>
   <!-- AI Report -->
@@ -503,6 +510,66 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <span class="material-symbols-outlined text-[22px]">eco</span>Eco
   </button>
 </nav>
+
+<!-- ═══ COMPREHENSIVE ANALYSIS MODAL ════════════════════════════════════ -->
+<div id="comp-modal" role="dialog" aria-modal="true">
+  <div id="comp-modal-bg" onclick="closeCompModal()"></div>
+  <div id="comp-modal-panel">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h2 class="font-headline-md text-[20px] font-bold text-on-surface">📊 收支分析</h2>
+        <p class="text-[12px] text-on-surface-variant mt-0.5">所有時間的完整統計</p>
+      </div>
+      <button onclick="closeCompModal()" class="text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-surface-variant transition-colors">
+        <span class="material-symbols-outlined text-[22px]">close</span>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="comp-loading" class="text-center py-12">
+      <div class="inline-block w-8 h-8 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin mb-3"></div>
+      <p class="text-[13px] text-on-surface-variant">計算統計中...</p>
+    </div>
+
+    <!-- Content -->
+    <div id="comp-content" style="display:none">
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-3 gap-3 mb-5" id="comp-summary-cards"></div>
+
+      <!-- Avg / Best / Worst row -->
+      <div class="grid grid-cols-2 gap-3 mb-5" id="comp-detail-cards"></div>
+
+      <!-- Monthly Trend Chart -->
+      <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant mb-5">
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">📅 各月收支趨勢</h3>
+        <div class="relative h-[220px]"><canvas id="compTrendChart"></canvas></div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant mb-5">
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">🗂️ 各類別支出佔比</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
+          <div class="relative h-[200px]"><canvas id="compCatChart"></canvas></div>
+          <div id="comp-cat-list" class="space-y-2 max-h-[200px] overflow-y-auto pr-1 no-scrollbar"></div>
+        </div>
+      </div>
+
+      <!-- Monthly detail table -->
+      <div class="bg-surface-container rounded-[18px] p-5 border border-surface-variant">
+        <h3 class="font-label-lg text-[13px] text-on-surface-variant uppercase mb-3">🗓️ 月份明細</h3>
+        <div id="comp-month-table" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- No data -->
+    <div id="comp-nodata" style="display:none" class="text-center py-12">
+      <div class="text-4xl mb-3 opacity-40">📭</div>
+      <p class="text-[14px] text-on-surface-variant">尚無交易記錄，請先新增支出。</p>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ ADD TRANSACTION SHEET ════════════════════════════════════════════ -->
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeAddSheet()"></div>
@@ -1374,6 +1441,146 @@ async function runAiAnalysis() {
   } finally {
     btn.disabled = false;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  COMPREHENSIVE ANALYSIS MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+let compTrendChart = null, compCatChart = null;
+
+async function openCompModal() {
+  const modal = document.getElementById('comp-modal');
+  modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  document.getElementById('comp-loading').style.display = 'block';
+  document.getElementById('comp-content').style.display = 'none';
+  document.getElementById('comp-nodata').style.display  = 'none';
+
+  try {
+    const d = await api('/api/stats/comprehensive');
+    if (!d.total_transactions) {
+      document.getElementById('comp-loading').style.display = 'none';
+      document.getElementById('comp-nodata').style.display  = 'block';
+      return;
+    }
+    renderComprehensive(d);
+    document.getElementById('comp-loading').style.display = 'none';
+    document.getElementById('comp-content').style.display = 'block';
+  } catch(e) {
+    document.getElementById('comp-loading').style.display = 'none';
+    toast('分析載入失敗', 'error');
+    closeCompModal();
+  }
+}
+
+function closeCompModal() {
+  document.getElementById('comp-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderComprehensive(d) {
+  const netColor = d.net >= 0 ? '#4ade80' : '#ffb4ab';
+
+  // ── Summary cards (3-col) ──────────────────────────────────────────────
+  const summaryCards = [
+    { label: '總支出', val: `$${fmt(d.total_expense)}`, color: '#ffb4ab' },
+    { label: '總收入', val: d.monthly_income ? `$${fmt(d.total_income)}` : '未設定', color: '#9ecede' },
+    { label: '淨額', val: d.monthly_income ? (d.net >= 0 ? '+' : '') + `$${fmt(d.net)}` : '—', color: netColor },
+  ];
+  document.getElementById('comp-summary-cards').innerHTML = summaryCards.map(c => `
+    <div class="bg-surface-container-high rounded-[16px] p-4 border border-surface-variant text-center">
+      <div class="font-headline-md text-[17px] font-bold" style="color:${c.color}">${c.val}</div>
+      <div class="font-label-lg text-[10px] text-on-surface-variant mt-1">${c.label}</div>
+    </div>`).join('');
+
+  // ── Detail cards (2-col) ──────────────────────────────────────────────
+  const hiMonth  = d.highest_month ? `${d.highest_month} ($${fmt(d.highest_amount)})` : '—';
+  const loMonth  = d.lowest_month  ? `${d.lowest_month} ($${fmt(d.lowest_amount)})`  : '—';
+  const detailCards = [
+    { label: '平均每月花費', val: `$${fmt(d.avg_monthly)}`, icon: '📅' },
+    { label: '平均每日花費', val: `$${fmt(d.avg_daily)}`,   icon: '📆' },
+    { label: '最高消費月份', val: hiMonth, icon: '📈' },
+    { label: '最低消費月份', val: loMonth, icon: '📉' },
+  ];
+  document.getElementById('comp-detail-cards').innerHTML = detailCards.map(c => `
+    <div class="bg-surface-container-high rounded-[16px] p-4 border border-surface-variant">
+      <div class="text-[18px] mb-1">${c.icon}</div>
+      <div class="font-headline-md text-[14px] font-bold text-on-surface">${esc(c.val)}</div>
+      <div class="font-label-lg text-[10px] text-on-surface-variant mt-0.5">${c.label}</div>
+    </div>`).join('');
+
+  // ── Monthly trend bar chart ───────────────────────────────────────────
+  const months   = Object.keys(d.by_month);
+  const expenses = months.map(m => d.by_month[m].expense);
+  const incomes  = months.map(() => d.monthly_income || 0);
+  const trendCtx = document.getElementById('compTrendChart');
+  if (compTrendChart) { compTrendChart.destroy(); compTrendChart = null; }
+  compTrendChart = new Chart(trendCtx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: '支出', data: expenses, backgroundColor: 'rgba(255,180,176,.7)', borderRadius: 6, order: 1 },
+        ...(d.monthly_income ? [{ label: '收入', data: incomes, backgroundColor: 'rgba(158,206,222,.35)', borderRadius: 6, order: 2 }] : []),
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 11 }, color: '#d7c2c0', boxWidth: 10 } }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: $${fmt(c.raw)}` } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9f8c8b' } },
+        y: { beginAtZero: true, ticks: { callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v), font: { size: 10 }, color: '#9f8c8b' }, grid: { color: 'rgba(51,53,55,.6)' } },
+      },
+    },
+  });
+
+  // ── Category doughnut ────────────────────────────────────────────────
+  const catEntries = Object.entries(d.by_category).slice(0, 10);
+  const catLabels  = catEntries.map(([c]) => c);
+  const catValues  = catEntries.map(([, v]) => v.amount);
+  const catColors  = catLabels.map(l => CAT_COLORS[l] || '#6b7280');
+  const catCtx     = document.getElementById('compCatChart');
+  if (compCatChart) { compCatChart.destroy(); compCatChart = null; }
+  compCatChart = new Chart(catCtx, {
+    type: 'doughnut',
+    data: { labels: catLabels, datasets: [{ data: catValues, backgroundColor: catColors, borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${d.by_category[c.label]?.pct ?? 0}%` } } } },
+  });
+
+  // Category list
+  document.getElementById('comp-cat-list').innerHTML = catEntries.map(([cat, v]) => {
+    const clr  = CAT_COLORS[cat] || '#6b7280';
+    const icon = CATS[cat] || '📦';
+    return `<div class="flex items-center gap-2">
+      <span class="text-[13px] shrink-0">${icon}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex justify-between text-[11px] mb-0.5">
+          <span class="text-on-surface-variant truncate">${esc(cat)}</span>
+          <span class="text-on-surface font-bold shrink-0 ml-1">${v.pct}%</span>
+        </div>
+        <div class="h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
+          <div class="h-full rounded-full" style="width:${v.pct}%;background:${clr}"></div>
+        </div>
+      </div>
+      <span class="text-[11px] text-on-surface-variant shrink-0 ml-1">$${fmt(v.amount)}</span>
+    </div>`;
+  }).join('');
+
+  // ── Monthly detail table ──────────────────────────────────────────────
+  document.getElementById('comp-month-table').innerHTML = Object.entries(d.by_month)
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([m, v]) => {
+      const netClr  = v.net >= 0 ? '#4ade80' : '#ffb4ab';
+      const netSign = v.net >= 0 ? '+' : '';
+      return `<div class="flex items-center justify-between px-4 py-3 bg-surface-container-high rounded-xl border border-surface-variant text-[13px]">
+        <span class="font-bold text-on-surface w-20 shrink-0">${m}</span>
+        <span class="text-[#ffb4ab]">-$${fmt(v.expense)}</span>
+        ${d.monthly_income ? `<span class="text-secondary">+$${fmt(v.income)}</span>` : ''}
+        ${d.monthly_income ? `<span class="font-bold" style="color:${netClr}">${netSign}$${fmt(Math.abs(v.net))}</span>` : ''}
+        <span class="text-on-surface-variant">${v.count} 筆</span>
+      </div>`;
+    }).join('');
 }
 
 // ── Seed / Demo ───────────────────────────────────────────────────────────────

@@ -748,6 +748,84 @@ def emotion_stats():
     return jsonify(result)
 
 
+# ── Comprehensive Stats (all-time) ──────────────────────────────────────────
+
+@app.route("/api/stats/comprehensive")
+def comprehensive_stats():
+    """Return all-time income/expense statistics across every month with data."""
+    expenses = Expense.query.order_by(Expense.date).all()
+
+    income_setting = Setting.query.filter_by(key="monthly_income").first()
+    monthly_income = float(income_setting.value) if income_setting else 0
+
+    if not expenses:
+        return jsonify({
+            "total_expense": 0, "total_income": 0, "net": 0,
+            "avg_daily": 0, "avg_monthly": 0,
+            "highest_month": None, "lowest_month": None,
+            "by_month": {}, "by_category": {},
+            "total_transactions": 0, "total_months": 0,
+            "monthly_income": monthly_income,
+        })
+
+    by_month_expense = defaultdict(float)
+    by_month_count   = defaultdict(int)
+    by_category      = defaultdict(float)
+    active_days      = set()
+
+    for ex in expenses:
+        m = ex.date.strftime("%Y-%m")
+        by_month_expense[m]  += ex.amount
+        by_month_count[m]    += 1
+        by_category[ex.category] += ex.amount
+        active_days.add(ex.date.isoformat())
+
+    total_expense  = sum(ex.amount for ex in expenses)
+    months_list    = sorted(by_month_expense.keys())
+    total_months   = len(months_list)
+    total_income   = monthly_income * total_months
+    net            = total_income - total_expense
+    avg_monthly    = round(total_expense / total_months, 0) if total_months else 0
+    avg_daily      = round(total_expense / len(active_days), 0) if active_days else 0
+
+    highest_month  = max(by_month_expense, key=by_month_expense.get) if by_month_expense else None
+    lowest_month   = min(by_month_expense, key=by_month_expense.get) if by_month_expense else None
+
+    by_month_out = {}
+    for m in months_list:
+        exp = round(by_month_expense[m], 0)
+        inc = round(monthly_income, 0)
+        by_month_out[m] = {
+            "expense": exp,
+            "income":  inc,
+            "net":     round(inc - exp, 0),
+            "count":   by_month_count[m],
+        }
+
+    cat_total  = sum(by_category.values())
+    cat_out    = {
+        cat: {"amount": round(amt, 0), "pct": round(amt / cat_total * 100, 1)}
+        for cat, amt in sorted(by_category.items(), key=lambda x: -x[1])
+    }
+
+    return jsonify({
+        "total_expense":     round(total_expense, 0),
+        "total_income":      round(total_income, 0),
+        "net":               round(net, 0),
+        "avg_daily":         avg_daily,
+        "avg_monthly":       avg_monthly,
+        "highest_month":     highest_month,
+        "highest_amount":    round(by_month_expense[highest_month], 0) if highest_month else 0,
+        "lowest_month":      lowest_month,
+        "lowest_amount":     round(by_month_expense[lowest_month], 0) if lowest_month else 0,
+        "by_month":          by_month_out,
+        "by_category":       cat_out,
+        "total_transactions": len(expenses),
+        "total_months":      total_months,
+        "monthly_income":    monthly_income,
+    })
+
+
 # ── AI Dashboard Analysis ────────────────────────────────────────────────────
 
 @app.route("/api/ai-analysis")
