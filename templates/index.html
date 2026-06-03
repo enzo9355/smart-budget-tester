@@ -653,101 +653,14 @@ fontSize:{"body-md":["16px",{lineHeight:"24px",fontWeight:"400"}],"headline-lg-m
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-3">
         <span class="text-2xl">📖</span>
-        <h2 class="font-headline-md text-[20px] font-bold text-on-surface">使用說明</h2>
+        <h2 id="help-modal-title" class="font-headline-md text-[20px] font-bold text-on-surface">使用說明</h2>
       </div>
       <button onclick="closeHelpModal()" class="text-on-surface-variant hover:text-on-surface p-2 rounded-full hover:bg-surface-variant transition-colors">
         <span class="material-symbols-outlined text-[22px]">close</span>
       </button>
     </div>
-    <div class="space-y-3" id="help-acc-list">
-
-      <!-- 1. 新增交易 -->
-      <div class="help-acc-item">
-        <button class="help-acc-btn" onclick="toggleHelpAcc(0)">
-          <span class="flex items-center gap-3"><span class="text-xl">➕</span><span class="font-bold text-[15px]">新增交易</span></span>
-          <span class="material-symbols-outlined help-acc-icon">expand_more</span>
-        </button>
-        <div class="help-acc-body">
-          <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
-            <p><strong class="text-on-surface">🤖 AI 智慧解析（推薦）</strong><br>在「描述您的消費」欄位輸入自然語言，例如「MOS 漢堡午餐 180，壓力好大」，再點擊「✨ AI 智慧解析」，系統會自動辨識金額、類別與情緒。</p>
-            <p><strong class="text-on-surface">✍️ 手動填寫</strong><br>直接輸入金額、選擇類別、日期與備註，再點擊「💾 儲存交易」即可。</p>
-            <p><strong class="text-on-surface">💰 收入記錄</strong><br>點擊上方「💰 收入」切換模式，輸入薪水或打工收入，收入不會計算碳排放。</p>
-            <p><strong class="text-on-surface">🌿 碳排放手動覆蓋</strong><br>系統會自動估算碳排放量；如需修正，點擊「手動輸入」按鈕輸入自訂的 kg CO₂e 數值。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. 預算管理 -->
-      <div class="help-acc-item">
-        <button class="help-acc-btn" onclick="toggleHelpAcc(1)">
-          <span class="flex items-center gap-3"><span class="text-xl">💰</span><span class="font-bold text-[15px]">預算管理</span></span>
-          <span class="material-symbols-outlined help-acc-icon">expand_more</span>
-        </button>
-        <div class="help-acc-body">
-          <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
-            <p><strong class="text-on-surface">設定每月收入</strong><br>在首頁點擊「💵 每月收入」旁的 ✏️ 圖示，輸入月收入，系統會自動計算剩餘預算比例。</p>
-            <p><strong class="text-on-surface">新增類別預算</strong><br>前往「碳足跡」頁面，找到「💰 預算管理」區塊，點擊「＋ 新增預算」，選擇類別並設定每月限額。</p>
-            <p><strong class="text-on-surface">查看預算狀態</strong><br>首頁的「Budgets」區塊會以進度條顯示各類別花費；超支時顯示「⚠️ 超支」警示。</p>
-            <p><strong class="text-on-surface">編輯／刪除預算</strong><br>在預算管理列表中，點擊各預算右側的「編輯」或「刪除」圖示進行修改。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. AI 分析 -->
-      <div class="help-acc-item">
-        <button class="help-acc-btn" onclick="toggleHelpAcc(2)">
-          <span class="flex items-center gap-3"><span class="text-xl">✨</span><span class="font-bold text-[15px]">AI 分析</span></span>
-          <span class="material-symbols-outlined help-acc-icon">expand_more</span>
-        </button>
-        <div class="help-acc-body">
-          <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
-            <p><strong class="text-on-surface">儀表板 AI 分析</strong><br>在首頁右側「✨ AI 消費分析」卡片，點擊「分析」，AI 會解讀當月消費模式並提供個人化建議與類別佔比。</p>
-            <p><strong class="text-on-surface">✨ AI 月度報告</strong><br>前往「分析」頁面，點擊「✨ AI 報告」，AI 會產生深度月度消費報告，分析消費趨勢與環保表現。</p>
-            <p><strong class="text-on-surface">📊 收支分析</strong><br>點擊「📊 收支分析」按鈕，查看所有時間的收入、支出、淨額統計及各月份趨勢圖表。</p>
-            <p><strong class="text-on-surface">語言設定</strong><br>AI 分析結果會跟隨介面語言（中文／英文）。點擊右上角語言切換按鈕即可變更。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Eco Profile -->
-      <div class="help-acc-item">
-        <button class="help-acc-btn" onclick="toggleHelpAcc(3)">
-          <span class="flex items-center gap-3"><span class="text-xl">🌍</span><span class="font-bold text-[15px]">Eco Profile（碳排放追蹤）</span></span>
-          <span class="material-symbols-outlined help-acc-icon">expand_more</span>
-        </button>
-        <div class="help-acc-body">
-          <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
-            <p><strong class="text-on-surface">地球狀態顯示</strong><br>首頁與碳足跡頁的地球動畫呈現四種狀態：🌍 蓬勃健康、🌎 普通、🌏 有壓力、🌫️ 危機。懸停地球圖示可查看詳細分數與說明。</p>
-            <p><strong class="text-on-surface">碳排放計算方式</strong><br>採用 GHG Protocol Scope 3 消費基礎方法：碳排放 (kg) = 金額 (TWD) × 排放係數。航班最高（0.28），大眾運輸最低（0.012）。</p>
-            <p><strong class="text-on-surface">環保等級系統</strong><br>累積環保點數可升級：🌱 幼苗 → 🌿 嫩芽（50 點）→ 🌳 守護者（150 點）→ 🌍 地球守護者（300 點）。選擇低碳消費可獲得更多點數。</p>
-            <p><strong class="text-on-surface">ESG 對比</strong><br>在「分析」頁面可查看碳足跡與台灣平均（每月 750 kg CO₂e）的比較，以及等同行駛公里數與需種樹數量。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 5. Analytics -->
-      <div class="help-acc-item">
-        <button class="help-acc-btn" onclick="toggleHelpAcc(4)">
-          <span class="flex items-center gap-3"><span class="text-xl">📈</span><span class="font-bold text-[15px]">Analytics（統計分析）</span></span>
-          <span class="material-symbols-outlined help-acc-icon">expand_more</span>
-        </button>
-        <div class="help-acc-body">
-          <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
-            <p><strong class="text-on-surface">切換月份</strong><br>使用頁面上方的月份選擇器可切換查看不同月份的統計資料，預設為當月。</p>
-            <p><strong class="text-on-surface">圖表說明</strong><br>
-              • <strong>每日消費趨勢</strong>：折線圖呈現當月每天支出變化<br>
-              • <strong>各類別消費</strong>：圓餅圖顯示各類別花費比例<br>
-              • <strong>各類別碳排放</strong>：長條圖比較各類別碳足跡<br>
-              • <strong>情緒消費分析</strong>：呈現不同心情下的消費比例
-            </p>
-            <p><strong class="text-on-surface">🔍 異常偵測</strong><br>點擊「重新整理」，AI 自動分析高於平均的異常消費，並依嚴重程度分為高／中／低三級。</p>
-            <p><strong class="text-on-surface">匯出與搜尋</strong><br>點擊「匯出 CSV」可下載交易記錄。在「歷史記錄」頁面可依關鍵字、月份、類別篩選所有交易，點「清除」可重置篩選條件。</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <p class="text-center text-[11px] text-outline mt-5">Smart Budget — NLP 智慧記帳 · 碳足跡追蹤 · AI 消費分析</p>
+    <div class="space-y-3" id="help-acc-list"></div>
+    <p id="help-modal-footer" class="text-center text-[11px] text-outline mt-5">Smart Budget — NLP 智慧記帳 · 碳足跡追蹤 · AI 消費分析</p>
   </div>
 </div>
 
@@ -1018,6 +931,7 @@ function applyLang() {
   if (window._lastEco) updateEarth(window._lastEco);
   const ait = document.getElementById('ai-idle-text');
   if (ait) ait.innerHTML = t('ai_idle');
+  if (document.getElementById('help-modal')?.classList.contains('open')) buildHelpModal();
 }
 
 const CUR_MONTH = new Date().toISOString().slice(0,7);
@@ -2163,8 +2077,152 @@ function renderComprehensive(d) {
     }).join('');
 }
 
-// ── Help Modal ────────────────────────────────────────────────────────────────
+// ── Help Modal (bilingual) ────────────────────────────────────────────────────
+const HELP_CONTENT = {
+  en: {
+    title: '📖 User Guide',
+    footer: 'Smart Budget — NLP Smart Tracking · Carbon Footprint · AI Analysis',
+    sections: [
+      { icon:'➕', title:'Add Transaction', items:[
+        { h:'🤖 AI Smart Parse (Recommended)',
+          b:'Type natural language in the "Describe your expense" field, e.g. "Lunch at MOS Burger 180, feeling stressed", then click "✨ Parse with AI". The system auto-detects amount, category, and mood.' },
+        { h:'✍️ Manual Entry',
+          b:'Enter the amount directly, select category, date, and note, then click "💾 Save Transaction".' },
+        { h:'💰 Income Recording',
+          b:'Click "💰 Income" to switch modes and record salary or part-time income. Income does not generate carbon calculations.' },
+        { h:'🌿 Carbon Override',
+          b:'The system auto-estimates carbon emissions. Click "Override" to enter a custom kg CO₂e value if needed.' },
+      ]},
+      { icon:'💰', title:'Budget Management', items:[
+        { h:'Set Monthly Income',
+          b:'On the Dashboard, click the ✏️ icon next to "💵 Monthly Income" and enter your income. The system calculates your remaining budget ratio automatically.' },
+        { h:'Add Category Budget',
+          b:'Go to "Eco Profile", find "💰 Budget Manager", click "+ Add Budget", select a category and set a monthly limit.' },
+        { h:'View Budget Status',
+          b:'The "Budgets" section on the Dashboard shows a progress bar for each category. An "⚠️ Over" warning appears when exceeded.' },
+        { h:'Edit / Delete Budget',
+          b:'Click the edit or delete icons on the right side of each row in the Budget Manager list.' },
+      ]},
+      { icon:'✨', title:'AI Analysis', items:[
+        { h:'Dashboard AI Analysis',
+          b:'Find the "✨ AI Analysis" card on the right of the Dashboard and click "Analyze". AI interprets your monthly spending patterns and provides personalized insights with category breakdowns.' },
+        { h:'✨ AI Monthly Report',
+          b:'Go to "Analytics" and click "✨ AI Report". AI generates a deep monthly report analyzing your consumption trends and eco performance.' },
+        { h:'📊 Income Analysis',
+          b:'Click "📊 Income Analysis" to see all-time income, expense, and net statistics with monthly trend charts.' },
+        { h:'Language Setting',
+          b:'AI analysis results follow the interface language (EN / 中文). Click the language toggle in the top-right corner to switch.' },
+      ]},
+      { icon:'🌍', title:'Eco Profile (Carbon Tracking)', items:[
+        { h:'Earth State Display',
+          b:'The Earth animation shows four states: 🌍 Thriving, 🌎 Neutral, 🌏 Stressed, 🌫️ Critical. Hover over the Earth icon to see detailed scores and tips.' },
+        { h:'Carbon Calculation',
+          b:'Uses GHG Protocol Scope 3 spend-based method: carbon (kg) = amount (TWD) × emission factor. Flights are highest (0.28), public transit lowest (0.012).' },
+        { h:'Eco Rank System',
+          b:'Accumulate eco points to level up: 🌱 Seedling → 🌿 Sprout (50 pts) → 🌳 Guardian (150 pts) → 🌍 Earth Protector (300 pts). Low-carbon choices earn more points.' },
+        { h:'ESG Comparison',
+          b:'In "Analytics", compare your footprint against the Taiwan average (750 kg CO₂e/month), shown as equivalent driving km and trees needed per year.' },
+      ]},
+      { icon:'📈', title:'Analytics', items:[
+        { h:'Switch Month',
+          b:'Use the month picker at the top of the Analytics page to browse different months. Defaults to the current month.' },
+        { h:'Charts Guide',
+          b:'• Daily Spending Trend: line chart of daily expenses\n• Spending by Category: pie chart of category ratios\n• Carbon by Category: bar chart comparing footprints\n• Spending by Emotion: pie chart of mood-based spending' },
+        { h:'🔍 Anomaly Detection',
+          b:'Click "Refresh" and AI automatically flags spending that exceeds your average, ranked High / Medium / Low by severity.' },
+        { h:'Export & Search',
+          b:'Click "Export CSV" to download transactions. In "History", filter by keyword, month, or category. Click "Clear" to reset all filters.' },
+      ]},
+    ]
+  },
+  zh: {
+    title: '📖 使用說明',
+    footer: 'Smart Budget — NLP 智慧記帳 · 碳足跡追蹤 · AI 消費分析',
+    sections: [
+      { icon:'➕', title:'新增交易', items:[
+        { h:'🤖 AI 智慧解析（推薦）',
+          b:'在「描述您的消費」欄位輸入自然語言，例如「MOS 漢堡午餐 180，壓力好大」，再點擊「✨ AI 智慧解析」，系統會自動辨識金額、類別與情緒。' },
+        { h:'✍️ 手動填寫',
+          b:'直接輸入金額、選擇類別、日期與備註，再點擊「💾 儲存交易」即可。' },
+        { h:'💰 收入記錄',
+          b:'點擊上方「💰 收入」切換模式，輸入薪水或打工收入，收入不會計算碳排放。' },
+        { h:'🌿 碳排放手動覆蓋',
+          b:'系統會自動估算碳排放量；如需修正，點擊「手動輸入」按鈕輸入自訂的 kg CO₂e 數值。' },
+      ]},
+      { icon:'💰', title:'預算管理', items:[
+        { h:'設定每月收入',
+          b:'在首頁點擊「💵 每月收入」旁的 ✏️ 圖示，輸入月收入，系統會自動計算剩餘預算比例。' },
+        { h:'新增類別預算',
+          b:'前往「碳足跡」頁面，找到「💰 預算管理」區塊，點擊「＋ 新增預算」，選擇類別並設定每月限額。' },
+        { h:'查看預算狀態',
+          b:'首頁的「Budgets」區塊會以進度條顯示各類別花費；超支時顯示「⚠️ 超支」警示。' },
+        { h:'編輯／刪除預算',
+          b:'在預算管理列表中，點擊各預算右側的「編輯」或「刪除」圖示進行修改。' },
+      ]},
+      { icon:'✨', title:'AI 分析', items:[
+        { h:'儀表板 AI 分析',
+          b:'在首頁右側「✨ AI 消費分析」卡片，點擊「分析」，AI 會解讀當月消費模式並提供個人化建議與類別佔比。' },
+        { h:'✨ AI 月度報告',
+          b:'前往「分析」頁面，點擊「✨ AI 報告」，AI 會產生深度月度消費報告，分析消費趨勢與環保表現。' },
+        { h:'📊 收支分析',
+          b:'點擊「📊 收支分析」按鈕，查看所有時間的收入、支出、淨額統計及各月份趨勢圖表。' },
+        { h:'語言設定',
+          b:'AI 分析結果會跟隨介面語言（中文／英文）。點擊右上角語言切換按鈕即可變更。' },
+      ]},
+      { icon:'🌍', title:'Eco Profile（碳排放追蹤）', items:[
+        { h:'地球狀態顯示',
+          b:'首頁與碳足跡頁的地球動畫呈現四種狀態：🌍 蓬勃健康、🌎 普通、🌏 有壓力、🌫️ 危機。懸停地球圖示可查看詳細分數與說明。' },
+        { h:'碳排放計算方式',
+          b:'採用 GHG Protocol Scope 3 消費基礎方法：碳排放 (kg) = 金額 (TWD) × 排放係數。航班最高（0.28），大眾運輸最低（0.012）。' },
+        { h:'環保等級系統',
+          b:'累積環保點數可升級：🌱 幼苗 → 🌿 嫩芽（50 點）→ 🌳 守護者（150 點）→ 🌍 地球守護者（300 點）。選擇低碳消費可獲得更多點數。' },
+        { h:'ESG 對比',
+          b:'在「分析」頁面可查看碳足跡與台灣平均（每月 750 kg CO₂e）的比較，以及等同行駛公里數與需種樹數量。' },
+      ]},
+      { icon:'📈', title:'Analytics（統計分析）', items:[
+        { h:'切換月份',
+          b:'使用頁面上方的月份選擇器可切換查看不同月份的統計資料，預設為當月。' },
+        { h:'圖表說明',
+          b:'• 每日消費趨勢：折線圖呈現當月每天支出變化\n• 各類別消費：圓餅圖顯示各類別花費比例\n• 各類別碳排放：長條圖比較各類別碳足跡\n• 情緒消費分析：呈現不同心情下的消費比例' },
+        { h:'🔍 異常偵測',
+          b:'點擊「重新整理」，AI 自動分析高於平均的異常消費，並依嚴重程度分為高／中／低三級。' },
+        { h:'匯出與搜尋',
+          b:'點擊「匯出 CSV」可下載交易記錄。在「歷史記錄」頁面可依關鍵字、月份、類別篩選所有交易，點「清除」可重置篩選條件。' },
+      ]},
+    ]
+  }
+};
+
+function buildHelpModal() {
+  const data = HELP_CONTENT[currentLang] || HELP_CONTENT.zh;
+  const titleEl = document.getElementById('help-modal-title');
+  if (titleEl) titleEl.textContent = data.title;
+  const footerEl = document.getElementById('help-modal-footer');
+  if (footerEl) footerEl.textContent = data.footer;
+  const list = document.getElementById('help-acc-list');
+  if (!list) return;
+  // preserve currently open section across language switch
+  const openIdx = [...list.querySelectorAll('.help-acc-body')].findIndex(b => b.classList.contains('open'));
+  list.innerHTML = data.sections.map((sec, idx) => `
+    <div class="help-acc-item">
+      <button class="help-acc-btn" onclick="toggleHelpAcc(${idx})">
+        <span class="flex items-center gap-3"><span class="text-xl">${sec.icon}</span><span class="font-bold text-[15px]">${sec.title}</span></span>
+        <span class="material-symbols-outlined help-acc-icon">expand_more</span>
+      </button>
+      <div class="help-acc-body${idx === openIdx ? ' open' : ''}">
+        <div class="text-[13px] text-on-surface-variant leading-relaxed space-y-3 pt-2">
+          ${sec.items.map(item => `<p><strong class="text-on-surface">${item.h}</strong><br>${item.b.replace(/\n/g, '<br>')}</p>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+  if (openIdx >= 0) {
+    const icons = list.querySelectorAll('.help-acc-icon');
+    if (icons[openIdx]) icons[openIdx].style.transform = 'rotate(180deg)';
+  }
+}
+
 function openHelpModal() {
+  buildHelpModal();
   document.getElementById('help-modal').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
